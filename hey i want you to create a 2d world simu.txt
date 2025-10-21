@@ -1,0 +1,15 @@
+hey i want you to create a 3d realistic world simulator here which will run on yarn react three vike.\
+I want it to be a galaxy simulator - it should have galactic dust, gravity, compression forces leading to heating of suns, planets, asteroids, everything - but it 
+all starts from nothing. supernovas, белые карлики, black holes, everything else. colorful, realistic, with changeable speed. i should be able to tweak main
+constants but for now set them to real numbers. we should see how dust creates gas giants, suns, planets, asteroids, how they collide, explode, grow smaller and die.
+ it should show the whole beauty of galaxy. i should be able to zoom in and out, see all processses happening in real galaxy but in very fast forward manner. create
+a full concept for it first and then let's implement it. starting from simplest things and then adding up more and more, so that on every step i can test it and give
+ you a go. just if i were creating it myself - let's start from really simplest things and proceed slowly implementing things one by one.\
+I want you to create a full blown concept for this app, describe all logic behind it, math, particle simulation and so on. create some md docs describing everything                                                                                                                                              
+and fill them in with data. i don't wnat you to code yet - just describe what dev process should look like, what are tasks in correct order, what is the concept,
+what is the implelentation, what is the physic behind it and so on - all topics which we might need describing before we start. don't do anything else - only create
+all required docs. after it stop. /ultrathink\
+\
+for ui i want you to use simple white little text and white checkboxes and sliders, nothing spectacular, very minimalistic.
+
+Every step of this project should be testable visually in browser. so please start small and then go big. do it in 4 steps. first one needs to be super basic and just test that setup works well.
