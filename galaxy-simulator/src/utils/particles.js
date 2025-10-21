@@ -1,5 +1,7 @@
 export function createParticles(count) {
   const positions = new Float32Array(count * 3);
+  const velocities = new Float32Array(count * 3);
+  const accelerations = new Float32Array(count * 3);
   const colors = new Float32Array(count * 3);
   const masses = new Float32Array(count);
 
@@ -13,6 +15,16 @@ export function createParticles(count) {
     positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
     positions[i * 3 + 2] = radius * Math.cos(phi);
 
+    // Small random initial velocity
+    velocities[i * 3 + 0] = (Math.random() - 0.5) * 0.1;
+    velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.1;
+    velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.1;
+
+    // Initialize accelerations to zero
+    accelerations[i * 3 + 0] = 0;
+    accelerations[i * 3 + 1] = 0;
+    accelerations[i * 3 + 2] = 0;
+
     // Random color (will be temperature-based later) - much brighter
     colors[i * 3 + 0] = 0.8 + Math.random() * 0.2; // R - bright red
     colors[i * 3 + 1] = 0.4 + Math.random() * 0.4; // G - orange tone
@@ -21,5 +33,5 @@ export function createParticles(count) {
     masses[i] = Math.random() * 0.001;
   }
 
-  return { positions, colors, masses, count };
+  return { positions, velocities, accelerations, colors, masses, count };
 }

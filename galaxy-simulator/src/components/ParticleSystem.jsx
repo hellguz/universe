@@ -1,5 +1,5 @@
 import { useRef, useMemo } from 'react';
-import * as THREE from 'three';
+import { useFrame } from '@react-three/fiber';
 
 export function ParticleSystem({ particles }) {
   const pointsRef = useRef();
@@ -12,6 +12,20 @@ export function ParticleSystem({ particles }) {
 
     return [positions, colors];
   }, [particles]);
+
+  // Update positions every frame
+  useFrame(() => {
+    if (!pointsRef.current || !particles) return;
+
+    const positionAttribute = pointsRef.current.geometry.attributes.position;
+
+    // Copy updated positions from particles
+    for (let i = 0; i < particles.count * 3; i++) {
+      positionAttribute.array[i] = particles.positions[i];
+    }
+
+    positionAttribute.needsUpdate = true;
+  });
 
   if (!particles || !positions || !colors) return null;
 
