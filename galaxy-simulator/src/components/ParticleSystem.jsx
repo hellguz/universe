@@ -1,20 +1,19 @@
-import { useRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useRef, useEffect, useMemo } from 'react';
 
 export function ParticleSystem({ particles }) {
   const pointsRef = useRef();
 
-  const [positions, colors] = useMemo(() => {
+  const [initialPositions, colors] = useMemo(() => {
     if (!particles) return [null, null];
 
     const positions = new Float32Array(particles.positions);
     const colors = new Float32Array(particles.colors);
 
     return [positions, colors];
-  }, [particles]);
+  }, [particles.count]); // Only recreate when particle count changes
 
-  // Update positions every frame
-  useFrame(() => {
+  // Update positions when particles change
+  useEffect(() => {
     if (!pointsRef.current || !particles) return;
 
     const positionAttribute = pointsRef.current.geometry.attributes.position;
@@ -25,9 +24,9 @@ export function ParticleSystem({ particles }) {
     }
 
     positionAttribute.needsUpdate = true;
-  });
+  }, [particles]);
 
-  if (!particles || !positions || !colors) return null;
+  if (!particles || !initialPositions || !colors) return null;
 
   return (
     <points ref={pointsRef}>
@@ -35,7 +34,7 @@ export function ParticleSystem({ particles }) {
         <bufferAttribute
           attach="attributes-position"
           count={particles.count}
-          array={positions}
+          array={initialPositions}
           itemSize={3}
         />
         <bufferAttribute

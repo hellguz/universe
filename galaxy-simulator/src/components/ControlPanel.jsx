@@ -1,7 +1,7 @@
 import { useSimulationStore } from '../store/simulation';
 
 export function ControlPanel() {
-  const { isRunning, timeScale, G, togglePause, setTimeScale, setG } = useSimulationStore();
+  const { isRunning, timeScale, G, theta, togglePause, setTimeScale, setG, setTheta } = useSimulationStore();
 
   return (
     <div style={{
@@ -51,7 +51,7 @@ export function ControlPanel() {
         />
       </div>
 
-      <div>
+      <div style={{ marginBottom: 15 }}>
         <label style={{ display: 'block', marginBottom: 5 }}>
           Gravity: {G.toFixed(2)}
         </label>
@@ -62,6 +62,21 @@ export function ControlPanel() {
           step="0.1"
           value={G}
           onChange={(e) => setG(Number(e.target.value))}
+          style={{ width: '100%' }}
+        />
+      </div>
+
+      <div>
+        <label style={{ display: 'block', marginBottom: 5 }}>
+          Theta: {theta.toFixed(2)}
+        </label>
+        <input
+          type="range"
+          min="0.1"
+          max="1.0"
+          step="0.05"
+          value={theta}
+          onChange={(e) => setTheta(Number(e.target.value))}
           style={{ width: '100%' }}
         />
       </div>
