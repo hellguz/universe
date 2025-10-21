@@ -1,9 +1,21 @@
+export const ParticleType = {
+  DUST: 0,
+  GAS: 1,
+  PROTO_STAR: 2,
+  STAR: 3,
+  PLANET: 4,
+  WHITE_DWARF: 5,
+  BLACK_HOLE: 6,
+};
+
 export function createParticles(count) {
   const positions = new Float32Array(count * 3);
   const velocities = new Float32Array(count * 3);
   const accelerations = new Float32Array(count * 3);
   const colors = new Float32Array(count * 3);
   const masses = new Float32Array(count);
+  const temperatures = new Float32Array(count);
+  const types = new Uint8Array(count);
 
   for (let i = 0; i < count; i++) {
     // Random position in a sphere
@@ -25,13 +37,15 @@ export function createParticles(count) {
     accelerations[i * 3 + 1] = 0;
     accelerations[i * 3 + 2] = 0;
 
-    // Random color (will be temperature-based later) - much brighter
-    colors[i * 3 + 0] = 0.8 + Math.random() * 0.2; // R - bright red
-    colors[i * 3 + 1] = 0.4 + Math.random() * 0.4; // G - orange tone
-    colors[i * 3 + 2] = 0.1 + Math.random() * 0.2; // B - minimal blue
+    // Initial color (will be updated by temperature)
+    colors[i * 3 + 0] = 0.3;
+    colors[i * 3 + 1] = 0.2;
+    colors[i * 3 + 2] = 0.15;
 
     masses[i] = Math.random() * 0.001;
+    temperatures[i] = 10 + Math.random() * 10; // 10-20 K
+    types[i] = ParticleType.DUST;
   }
 
-  return { positions, velocities, accelerations, colors, masses, count };
+  return { positions, velocities, accelerations, colors, masses, temperatures, types, count };
 }

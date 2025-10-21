@@ -1,6 +1,9 @@
 import { computeBarnesHutGravity } from '../utils/barnesHut';
 import { verletStep } from '../utils/integration';
 import { createParticles } from '../utils/particles';
+import { computeHeating } from '../utils/heating';
+import { updateStellarTypes } from '../utils/stellar';
+import { updateColors } from '../utils/colormap';
 
 let particles = null;
 let config = {
@@ -11,6 +14,8 @@ let config = {
   timeScale: 1,
   isRunning: true,
 };
+
+let frameCount = 0;
 
 self.onmessage = (e) => {
   switch (e.data.type) {
@@ -28,8 +33,7 @@ self.onmessage = (e) => {
 
     case 'step':
       if (particles && config.isRunning) {
-        computeBarnesHutGravity(particles, config.G, config.epsilon, config.theta);
-        verletStep(particles, config.dt * config.timeScale);
+        physicsStep();
         self.postMessage({
           type: 'update',
           particles: serializeParticles(particles)
@@ -39,6 +43,22 @@ self.onmessage = (e) => {
   }
 };
 
+function physicsStep() {
+  // Gravity and motion
+  computeBarnesHutGravity(particles, config.G, config.epsilon, config.theta);
+  verletStep(particles, config.dt * config.timeScale);
+
+  // Only run expensive operations every few frames
+  frameCount++;
+
+  if (frameCount % 10 === 0) {
+    // Heating (expensive, run every 10 frames)
+    computeHeating(particles);
+    updateStellarTypes(particles);
+    updateColors(particles);
+  }
+}
+
 function serializeParticles(p) {
   return {
     positions: p.positions,
@@ -46,6 +66,8 @@ function serializeParticles(p) {
     accelerations: p.accelerations,
     colors: p.colors,
     masses: p.masses,
+    temperatures: p.temperatures,
+    types: p.types,
     count: p.count,
   };
 }
@@ -53,8 +75,7 @@ function serializeParticles(p) {
 // Auto-step at 60 Hz
 setInterval(() => {
   if (particles && config.isRunning) {
-    computeBarnesHutGravity(particles, config.G, config.epsilon, config.theta);
-    verletStep(particles, config.dt * config.timeScale);
+    physicsStep();
     self.postMessage({
       type: 'update',
       particles: serializeParticles(particles)
