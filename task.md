@@ -1,0 +1,5 @@
+I want to create a full-featured universe simulator.
+I want to watch galaxies form, stars ignite, and planets orbit in a realistic manner. All should starting from the Big Bang and evolving over billions of years. I want to also simulate various cosmic events like supernovae, black hole formations, and cosmic microwave background radiation.  
+It needs to include accurate physics, gravitational interactions, and cosmic events. It should be based on current astrophysical theories and data. It should feature a stunning visual representation of space phenomena. Additionally, I want to be able to manipulate variables like time, mass, and distance to see how they affect the evolution of the universe.
+
+App should be based on Particle System in React, utilizing WebGL for rendering complex visual effects. My stack should include React, Three.js, yarn, vike, and TypeScript. App should be extremely performant and optimized for both desktop and mobile devices. It should handle millions of particles smoothly. User interface should be a simple white on black set of minimalist controls to adjust simulation parameters. App must run in real-time in 60fps. 
