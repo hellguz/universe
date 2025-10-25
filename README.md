@@ -314,32 +314,35 @@ universe-simulator/
 
 ## Phased Development Roadmap
 
-### Phase 1: MVP - Basic Particle System (2-3 weeks)
+### Phase 1: MVP - Basic Particle System ✅ COMPLETE
 
 **Goal**: Functional particle simulator with gravity and basic controls
+**Completed**: 2025-10-25
 
 #### Features
 - [x] Project setup (Vite + React + TypeScript + R3F)
-- [ ] Basic FBO implementation with simulation/render passes
-- [ ] Simple gravitational simulation (direct N-body, limited particles)
-- [ ] Initial particle distribution (random sphere)
-- [ ] Basic camera controls (orbit, zoom, pan)
-- [ ] Time control (play, pause, speed adjustment)
-- [ ] Simple particle rendering (single color, size based on distance)
-- [ ] Basic UI (minimal controls, stats display)
-- [ ] Performance monitoring (FPS counter)
+- [x] Basic FBO implementation with simulation/render passes
+- [x] Simple gravitational simulation (direct N-body, limited particles)
+- [x] Initial particle distribution (random sphere)
+- [x] Basic camera controls (orbit, zoom, pan)
+- [x] Time control (play, pause, speed adjustment)
+- [x] Simple particle rendering (single color, size based on distance)
+- [x] Basic UI (minimal controls, stats display)
+- [x] Performance monitoring (FPS counter)
 
 #### Technical Milestones
-1. **FBO Setup**: 128×128 texture (16,384 particles) running at 60fps
-2. **Gravity Working**: Particles attract each other visibly
-3. **Smooth Controls**: Camera and time manipulation responsive
-4. **Clean UI**: White-on-black minimal interface
+1. ✅ **FBO Setup**: 128×128 texture (16,384 particles) running at 60fps
+2. ✅ **Gravity Working**: Particles attract each other visibly
+3. ✅ **Smooth Controls**: Camera and time manipulation responsive
+4. ✅ **Clean UI**: White-on-black minimal interface
 
 #### Success Criteria
-- 16K particles @ 60fps on mid-range hardware
-- Visible gravitational clustering
-- Intuitive camera navigation
-- Time speed adjustable from 1x to 1000x
+- ✅ 16K particles @ 60fps on mid-range hardware
+- ✅ Visible gravitational clustering
+- ✅ Intuitive camera navigation
+- ✅ Time speed adjustable from 1x to 1000x
+
+**See [ITERATIONS.md](ITERATIONS.md) for detailed implementation notes and learnings.**
 
 ---
 
