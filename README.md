@@ -475,8 +475,8 @@ yarn dev
 # Build for production
 yarn build
 
-# Preview production build
-yarn preview
+# Start production build
+yarn start
 ```
 
 ### Environment Configuration
@@ -505,9 +505,9 @@ VITE_PARTICLE_SIZE=2.0
 ```bash
 yarn dev           # Start dev server (localhost:5173)
 yarn build         # Production build
-yarn preview       # Preview production build
+yarn start         # Preview production build
 yarn lint          # Run ESLint
-yarn type-check    # TypeScript validation
+yarn ts            # TypeScript validation
 yarn test          # Run tests (Vitest)
 ```
 
@@ -564,13 +564,13 @@ yarn test          # Run tests (Vitest)
 
 Target performance across hardware tiers:
 
-| Hardware Tier | Particle Count | Frame Rate | Settings |
-|---------------|----------------|------------|----------|
-| High-end Desktop | 5,000,000 | 60 FPS | Full effects, 4K |
-| Mid-range Desktop | 2,000,000 | 60 FPS | Full effects, 1080p |
-| Budget Desktop | 500,000 | 60 FPS | Reduced effects, 1080p |
-| High-end Mobile | 500,000 | 30-60 FPS | Reduced effects, 720p |
-| Mid-range Mobile | 250,000 | 30 FPS | Minimal effects, 720p |
+| Hardware Tier     | Particle Count | Frame Rate | Settings               |
+| ----------------- | -------------- | ---------- | ---------------------- |
+| High-end Desktop  | 5,000,000      | 60 FPS     | Full effects, 4K       |
+| Mid-range Desktop | 2,000,000      | 60 FPS     | Full effects, 1080p    |
+| Budget Desktop    | 500,000        | 60 FPS     | Reduced effects, 1080p |
+| High-end Mobile   | 500,000        | 30-60 FPS  | Reduced effects, 720p  |
+| Mid-range Mobile  | 250,000        | 30 FPS     | Minimal effects, 720p  |
 
 ### Optimization Checklist
 - [ ] Use `Float32Array` for all data textures
