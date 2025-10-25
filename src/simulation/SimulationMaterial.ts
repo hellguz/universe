@@ -1,8 +1,9 @@
 import * as THREE from 'three'
 import simulationVertexShader from '../shaders/simulation/vertex.glsl'
-import simulationFragmentShader from '../shaders/simulation/fragment.glsl'
+import velocityFragmentShader from '../shaders/simulation/velocityFragment.glsl'
+import positionFragmentShader from '../shaders/simulation/positionFragment.glsl'
 
-export function createSimulationMaterial(
+export function createVelocityMaterial(
   positionTexture: THREE.Texture,
   velocityTexture: THREE.Texture,
   textureSize: number
@@ -17,6 +18,21 @@ export function createSimulationMaterial(
       textureSize: { value: textureSize }
     },
     vertexShader: simulationVertexShader,
-    fragmentShader: simulationFragmentShader
+    fragmentShader: velocityFragmentShader
+  })
+}
+
+export function createPositionMaterial(
+  positionTexture: THREE.Texture,
+  velocityTexture: THREE.Texture
+): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    uniforms: {
+      positionTexture: { value: positionTexture },
+      velocityTexture: { value: velocityTexture },
+      delta: { value: 0 }
+    },
+    vertexShader: simulationVertexShader,
+    fragmentShader: positionFragmentShader
   })
 }

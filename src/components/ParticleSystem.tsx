@@ -7,7 +7,7 @@ import {
   createVelocityTexture,
   createParticleUVs
 } from '../utils/dataTexture'
-import { createSimulationMaterial } from '../simulation/SimulationMaterial'
+import { createVelocityMaterial, createPositionMaterial } from '../simulation/SimulationMaterial'
 import { createRenderMaterial } from '../simulation/RenderMaterial'
 import { TEXTURE_SIZE, PARTICLE_COUNT } from '../utils/constants'
 
@@ -80,33 +80,32 @@ export default function ParticleSystem() {
   }, [gl])
 
   // Create simulation materials (for physics calculation)
-  const { simulationScene, simulationCamera, simulationMaterialPosition, simulationMaterialVelocity } = useMemo(() => {
+  const { simulationScene, simulationCamera, velocityMaterial, positionMaterial } = useMemo(() => {
     const scene = new THREE.Scene()
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
     const geometry = new THREE.PlaneGeometry(2, 2)
 
-    // Material for position update
-    const matPosition = createSimulationMaterial(
+    // Material for velocity update (gravity calculations)
+    const matVelocity = createVelocityMaterial(
       fbo.positionRT1.texture,
       fbo.velocityRT1.texture,
       TEXTURE_SIZE
     )
 
-    // Material for velocity update (same shader, different output)
-    const matVelocity = createSimulationMaterial(
+    // Material for position update (integrate velocity)
+    const matPosition = createPositionMaterial(
       fbo.positionRT1.texture,
-      fbo.velocityRT1.texture,
-      TEXTURE_SIZE
+      fbo.velocityRT1.texture
     )
 
-    const mesh = new THREE.Mesh(geometry, matPosition)
+    const mesh = new THREE.Mesh(geometry, matVelocity)
     scene.add(mesh)
 
     return {
       simulationScene: scene,
       simulationCamera: camera,
-      simulationMaterialPosition: matPosition,
-      simulationMaterialVelocity: matVelocity
+      velocityMaterial: matVelocity,
+      positionMaterial: matPosition
     }
   }, [fbo])
 
@@ -143,28 +142,30 @@ export default function ParticleSystem() {
     const posReadRT = fbo.currentPositionIndex === 0 ? fbo.positionRT1 : fbo.positionRT2
     const posWriteRT = fbo.currentPositionIndex === 0 ? fbo.positionRT2 : fbo.positionRT1
     const velReadRT = fbo.currentVelocityIndex === 0 ? fbo.velocityRT1 : fbo.velocityRT2
-    // const velWriteRT = fbo.currentVelocityIndex === 0 ? fbo.velocityRT2 : fbo.velocityRT1 // For future use
+    const velWriteRT = fbo.currentVelocityIndex === 0 ? fbo.velocityRT2 : fbo.velocityRT1
 
-    // Update simulation material uniforms
-    simulationMaterialPosition.uniforms.positionTexture.value = posReadRT.texture
-    simulationMaterialPosition.uniforms.velocityTexture.value = velReadRT.texture
-    simulationMaterialPosition.uniforms.time.value = time
-    simulationMaterialPosition.uniforms.delta.value = scaledDelta
-    simulationMaterialPosition.uniforms.G.value = gravitationalConstant
-
-    simulationMaterialVelocity.uniforms.positionTexture.value = posReadRT.texture
-    simulationMaterialVelocity.uniforms.velocityTexture.value = velReadRT.texture
-    simulationMaterialVelocity.uniforms.time.value = time
-    simulationMaterialVelocity.uniforms.delta.value = scaledDelta
-    simulationMaterialVelocity.uniforms.G.value = gravitationalConstant
-
-    // Run simulation (physics pass)
-    // Note: For full implementation, we'd need MRT (Multiple Render Targets) to update both position and velocity
-    // For simplicity in Phase 1, we'll update position based on velocity
-
-    // Update position
     const mesh = simulationScene.children[0] as THREE.Mesh
-    mesh.material = simulationMaterialPosition
+
+    // PASS 1: Update velocity based on gravitational forces
+    velocityMaterial.uniforms.positionTexture.value = posReadRT.texture
+    velocityMaterial.uniforms.velocityTexture.value = velReadRT.texture
+    velocityMaterial.uniforms.time.value = time
+    velocityMaterial.uniforms.delta.value = scaledDelta
+    velocityMaterial.uniforms.G.value = gravitationalConstant
+
+    mesh.material = velocityMaterial
+    gl.setRenderTarget(velWriteRT)
+    gl.render(simulationScene, simulationCamera)
+
+    // Swap velocity buffers
+    fbo.currentVelocityIndex = 1 - fbo.currentVelocityIndex
+
+    // PASS 2: Update position based on new velocity
+    positionMaterial.uniforms.positionTexture.value = posReadRT.texture
+    positionMaterial.uniforms.velocityTexture.value = velWriteRT.texture
+    positionMaterial.uniforms.delta.value = scaledDelta
+
+    mesh.material = positionMaterial
     gl.setRenderTarget(posWriteRT)
     gl.render(simulationScene, simulationCamera)
 
@@ -187,10 +188,10 @@ export default function ParticleSystem() {
       fbo.velocityRT2.dispose()
       particleGeometry.dispose()
       renderMaterial.dispose()
-      simulationMaterialPosition.dispose()
-      simulationMaterialVelocity.dispose()
+      velocityMaterial.dispose()
+      positionMaterial.dispose()
     }
-  }, [])
+  }, [fbo, particleGeometry, renderMaterial, velocityMaterial, positionMaterial])
 
   return (
     <points ref={pointsRef} geometry={particleGeometry} material={renderMaterial} />
