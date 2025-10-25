@@ -18,14 +18,16 @@ void main() {
     float mass = posData.w;
     vec3 velocity = velData.xyz;
 
-    // Calculate gravitational acceleration from all other particles
+    // Calculate gravitational acceleration from subset of particles
     vec3 acceleration = vec3(0.0);
 
-    // Direct N-body calculation (O(N²) - works for 16K particles)
+    // Optimized N-body: sample every 4th particle (16x fewer calculations)
+    // This approximation works well for large-scale gravitational dynamics
     float texelSize = 1.0 / textureSize;
+    float stride = 4.0; // Sample every 4th particle
 
-    for (float y = 0.0; y < textureSize; y++) {
-        for (float x = 0.0; x < textureSize; x++) {
+    for (float y = 0.0; y < textureSize; y += stride) {
+        for (float x = 0.0; x < textureSize; x += stride) {
             vec2 otherUv = vec2((x + 0.5) * texelSize, (y + 0.5) * texelSize);
 
             // Skip self
@@ -47,7 +49,8 @@ void main() {
 
             // F = G * m1 * m2 / r²
             // a = F / m1 = G * m2 / r²
-            float forceMag = G * otherMass / (dist * dist);
+            // Multiply by stride² to compensate for sampling
+            float forceMag = G * otherMass * (stride * stride) / (dist * dist);
 
             // Acceleration in direction of force
             acceleration += normalize(diff) * forceMag;
