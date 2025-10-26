@@ -19,12 +19,12 @@ export const INITIAL_SPREAD = 50 // Sphere radius for initial distribution
 export const INITIAL_VELOCITY_SPREAD = 0.1 // Random velocity magnitude
 
 // Rendering - optimized for high particle count
-export const PARTICLE_SIZE = 1.2
+export const PARTICLE_SIZE = 0.2
 export const PARTICLE_COLOR = [1.0, 1.0, 1.0] // White
 
 // Time controls
-export const MIN_TIME_SCALE = 0
-export const MAX_TIME_SCALE = 1000
+export const MIN_TIME_SCALE = 1
+export const MAX_TIME_SCALE = 100
 export const DEFAULT_TIME_SCALE = 1
 
 // Camera
