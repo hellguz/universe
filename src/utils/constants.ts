@@ -3,12 +3,12 @@
  */
 
 // Simulation settings
-export const TEXTURE_SIZE = 256 // 256x256 = 65,536 particles
+export const TEXTURE_SIZE = 512 // 512x512 = 262,144 particles
 export const PARTICLE_COUNT = TEXTURE_SIZE * TEXTURE_SIZE
 
-// Performance settings
-export const GRAVITY_CUTOFF_DISTANCE = 100.0 // Ignore particles beyond this distance
-export const MAX_FORCE_MAGNITUDE = 0.01 // Cap force to prevent instability
+// Performance settings - Fixed Sample Budget
+export const SAMPLES_PER_PARTICLE = 128 // Fixed computational budget per particle
+export const GRAVITY_CUTOFF_DISTANCE = 80.0 // Only check nearby particles
 
 // Physics constants (scaled for simulation)
 export const GRAVITATIONAL_CONSTANT = 0.0001 // Scaled G for visible effects
@@ -18,8 +18,8 @@ export const TIMESTEP = 0.016 // ~60fps
 export const INITIAL_SPREAD = 50 // Sphere radius for initial distribution
 export const INITIAL_VELOCITY_SPREAD = 0.1 // Random velocity magnitude
 
-// Rendering
-export const PARTICLE_SIZE = 2.0
+// Rendering - optimized for high particle count
+export const PARTICLE_SIZE = 1.2
 export const PARTICLE_COLOR = [1.0, 1.0, 1.0] // White
 
 // Time controls

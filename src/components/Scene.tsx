@@ -32,13 +32,15 @@ export default function Scene() {
         <ParticleSystem />
       </Suspense>
 
-      {/* Post-processing effects */}
-      <EffectComposer>
+      {/* Post-processing effects - optimized for high particle count */}
+      <EffectComposer multisampling={0}>
         <Bloom
-          intensity={0.8}
-          luminanceThreshold={0.2}
-          luminanceSmoothing={0.9}
+          intensity={0.6}
+          luminanceThreshold={0.3}
+          luminanceSmoothing={0.8}
           mipmapBlur
+          levels={5}
+          kernelSize={2}
         />
       </EffectComposer>
     </Canvas>

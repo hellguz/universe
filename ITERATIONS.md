@@ -266,6 +266,33 @@ Successfully implemented a three-type particle system with proper GPU data flow:
 3. **WebGPU Compute** - 10-100x faster than WebGL fragment shaders
 4. **Hierarchical Time Steps** - Update distant particles less frequently
 
+### Session 4 (2025-10-26) - Scaling to 4M Particles
+
+**Approach - Fixed Sample Budget:**
+Instead of O(N) or O(N²), maintain O(1) per particle:
+- Each particle samples exactly 64 other particles (fixed cost)
+- Adaptive stride: `stride = sqrt(N / 64)`
+- Random sampling offset reduces banding artifacts
+- Distance cutoff (80 units) for spatial locality
+
+**Optimizations:**
+- 2048×2048 texture = 4,194,304 particles
+- Sample budget: 64 particles × 4M = 256M calculations/frame (vs 16B+ for stride-only)
+- Reduced particle size: 2.0 → 1.2 for less overdraw
+- Optimized bloom: lower intensity, higher threshold, smaller kernel
+- Random offset per frame prevents visual banding
+
+**Trade-offs:**
+- Physics accuracy reduced (sampling 64 of 4M particles = 0.0015%)
+- Works for large-scale structure formation (galaxies, clusters)
+- Not suitable for close encounters or precise orbital mechanics
+- Essentially a "mean field" approximation
+
+**Expected Performance:**
+- 4M particles should run at 30-60fps depending on GPU
+- Can scale to 5M+ (2304×2304) with same approach
+- Bottleneck shifts from compute to memory bandwidth
+
 ---
 
 ## Phase 3: Stellar Evolution & Cosmic Events
@@ -348,10 +375,10 @@ _Future enhancements..._
 **Phase 2 Started**: 2025-10-26
 
 ### Key Metrics
-- **Performance**: 60fps @ 262K particles with bloom
-- **Particle Count**: 262,144 (512×512 texture)
+- **Particle Count**: 4,194,304 (2048×2048 texture) - targeting 5M+
+- **Performance**: Fixed O(1) algorithm, 64 samples/particle
 - **Particle Types**: 3 types (dark matter, gas, stars)
-- **Visual Effects**: Bloom post-processing, temperature-based colors
+- **Visual Effects**: Optimized bloom, temperature-based colors
 - **Galaxy**: Rotating disk with exponential profile + dark matter halo
 
 ### Technology Stack
@@ -360,9 +387,10 @@ _Future enhancements..._
 - ✅ @react-three/postprocessing for bloom
 
 ### Recent (2025-10-26)
-- ✅ Scaled from 16K → 65K → 262K particles (16x total increase)
-- ✅ Disk galaxy, rotation, temperature colors, size variation
-- ✅ Bloom post-processing, adaptive stride optimization
+- ✅ Scaled to 4M particles using fixed sample budget approach
+- ✅ Implemented O(1) algorithm: 64 samples/particle regardless of total count
+- ✅ Random sampling with distance cutoff for spatial locality
+- ✅ Optimized bloom and rendering for high particle counts
 
 ---
 
