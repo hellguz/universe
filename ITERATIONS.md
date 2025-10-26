@@ -128,9 +128,9 @@ Ready to implement:
 - [x] **Temperature-based color variation within types** ✅
 - [x] **Particle size variation based on type** ✅
 - [x] **Rotation and angular momentum conservation** ✅
+- [x] **Improved visual effects (bloom)** ✅
 - [ ] Particle state system (gas → star transitions)
 - [ ] Galaxy collision scenarios
-- [ ] Improved visual effects (glow, bloom)
 - [ ] Performance profiling and optimization
 - [ ] Scale to 1M+ particles with Barnes-Hut optimization
 
@@ -229,149 +229,42 @@ Successfully implemented a three-type particle system with proper GPU data flow:
 - Color calculations in fragment shader are negligible
 - Ready to scale up particle count in next iteration
 
-### Implementation Progress (Session 2025-10-26 - Continued)
+### Session 2 (2025-10-26) - Disk Galaxy & Scaling
 
-**Completed Features:**
+**Completed:**
+- Scaled to 65,536 particles (256×256 texture), 60fps maintained
+- Particle size variation: DM=0.7x, gas=1.0x, stars=1.8x
+- Disk galaxy: exponential radial profile, flat rotation curve (v=0.15)
+- Temperature-based colors: gas (blue→cyan→orange), stars (orange→yellow→blue-white)
 
-#### 1. Increased Particle Count to 65,536
-Successfully scaled simulation from 16K to 65K particles:
-- **Texture Size**: Increased from 128×128 to 256×256
-- **Particle Count**: Now simulating 65,536 particles (4x increase)
-- **Performance**: Maintains 60fps at higher particle count due to optimized sampling
-- **Files Modified**: [src/utils/constants.ts](src/utils/constants.ts:6)
+**Implementation:**
+- Position texture: xyz=pos, w=type
+- Velocity texture: xyz=vel, w=temperature
+- Disk distribution: DM halo (1.5x radius), gas/stars in thin disk
+- Colors use mix() with temperature thresholds
 
-#### 2. Particle Size Variation Based on Type
-Implemented visual differentiation through size scaling:
-- **Dark Matter**: 0.7x scale (smaller, subtle presence)
-- **Gas**: 1.0x scale (standard size)
-- **Stars**: 1.8x scale (larger, more prominent bright points)
-- **Implementation**: Size multiplier in vertex shader based on particle type
-- **Files Modified**: [src/shaders/render/vertex.glsl](src/shaders/render/vertex.glsl:24-32)
+**Learnings:**
+- FBO channels ideal for particle metadata
+- Rotation requires coupled position/velocity initialization
+- 4x particle increase with no perf hit due to stride=4 sampling
 
-#### 3. Disk Galaxy Initial Conditions with Rotation
-Created realistic spiral galaxy formation setup:
+### Session 3 (2025-10-26) - Bloom & Performance Analysis
 
-**Spatial Distribution:**
-- **Dark Matter Halo**: Spherical distribution with 1.5x larger radius than disk
-  - Provides gravitational scaffolding for the galaxy
-  - Uses spherical coordinates for uniform 3D distribution
-- **Gas & Stars Disk**: Exponential radial profile in x-z plane
-  - Exponential density: `r = -ln(1-u) * scale_length`
-  - Thin vertical distribution (disk thickness 5-10% of radius)
-  - Concentrated toward galactic center (realistic density profile)
+**Completed:**
+- Added bloom effect using @react-three/postprocessing v2.19
+- Distance cutoff optimization (ignore particles >100 units away)
+- Performance testing: 65K@60fps, 262K@40fps, 1M@2-6fps
 
-**Rotational Velocities:**
-- **Flat Rotation Curve**: Implements typical spiral galaxy velocity profile
-- **Circular Orbits**: Particles orbit in x-z plane perpendicular to radius vector
-- **Rotation Speed**: 0.15 units (tuned for visible rotation)
-- **Velocity Formula**: `v = rotationSpeed * perpendicular(radius_vector)`
-- **Turbulence**: Small random velocity component (30% for disk, 50% for halo)
-- **Dark Matter**: Random velocities only (no coherent rotation)
+**Critical Finding - Current O(N²) Approach Won't Scale:**
+- 65K particles: ~16M calculations/frame (stride=4) = 60fps ✓
+- 1M particles: ~4B calculations/frame (stride=16) = 2-6fps ✗
+- 5M particles: Would need O(N log N) algorithm, not O(N²)
 
-**Technical Implementation:**
-- Modified `createPositionTexture()` to generate disk geometry
-- Modified `createVelocityTexture()` to accept position texture as input
-- Calculates initial velocities based on particle position and type
-- Files Modified:
-  - [src/utils/dataTexture.ts](src/utils/dataTexture.ts:22-150)
-  - [src/components/ParticleSystem.tsx](src/components/ParticleSystem.tsx:29)
-
-#### 4. Temperature-Based Color Variation
-Implemented physically-inspired color gradients for each particle type:
-
-**Temperature Storage:**
-- Stored in 4th channel (w component) of velocity texture
-- Initialized based on particle type and position
-- Preserved through simulation loop
-
-**Temperature Assignment:**
-- **Dark Matter**: 0.0 (no temperature - doesn't interact electromagnetically)
-- **Gas**: 0.3-0.9 range
-  - Cooler in outer regions (radial gradient)
-  - Warmer near galactic center
-  - Random variation for visual richness
-- **Stars**: 0.7-1.0 range (hot objects with slight variation)
-
-**Color Mapping:**
-- **Gas Colors** (temperature-based):
-  - Cool (0.0-0.5): Deep blue → Bright cyan
-  - Warm (0.5-1.0): Cyan → Yellow/orange
-- **Star Colors** (stellar spectral classes):
-  - Cool (0.0-0.6): Orange (M-class) → Yellow (G-class)
-  - Hot (0.6-1.0): Yellow-white (A-class) → Blue-white (O/B-class)
-- **Dark Matter**: No temperature variation (constant purple)
-
-**Visual Result:**
-- Gas clouds show realistic temperature distribution
-- Stars display spectral diversity (red giants to blue supergiants)
-- Creates visually rich and scientifically inspired galaxy appearance
-
-**Files Modified:**
-- [src/utils/dataTexture.ts](src/utils/dataTexture.ts:117-153) - Temperature assignment
-- [src/simulation/RenderMaterial.ts](src/simulation/RenderMaterial.ts:6-14) - Added velocity texture uniform
-- [src/shaders/render/vertex.glsl](src/shaders/render/vertex.glsl:4-23) - Pass temperature to fragment shader
-- [src/shaders/render/fragment.glsl](src/shaders/render/fragment.glsl:1-75) - Temperature-based color mixing
-- [src/components/ParticleSystem.tsx](src/components/ParticleSystem.tsx:150-200) - Updated render material with velocity texture
-
-### Learnings
-
-**Disk Galaxy Physics:**
-- Exponential radial profiles create realistic galaxy structure
-- Flat rotation curves are characteristic of dark matter-dominated galaxies
-- Thin disks require careful vertical scaling (5-10% of radius)
-- Angular momentum must be initialized correctly for stable rotation
-
-**Temperature as Visual Metadata:**
-- 4th texture channel is perfect for storing visual metadata
-- Temperature doesn't need to evolve physically (yet) - static values work well
-- Color gradients based on temperature create intuitive visual feedback
-- Physically-inspired colors enhance scientific realism
-
-**Performance at Scale:**
-- 4x particle increase (16K → 65K) maintains 60fps
-- Optimized gravity sampling (every 4th particle) scales well
-- Texture lookups in shaders are efficient even at 256×256
-- Ready to attempt next magnitude increase (256K particles)
-
-**Data Flow in FBO Systems:**
-- Position texture: xyz = position, w = particle type (static)
-- Velocity texture: xyz = velocity, w = temperature (static for now)
-- Both textures ping-pong through simulation loop
-- Render shaders sample both textures for complete particle state
-
-### Challenges & Solutions
-
-**1. Velocity Texture Refactoring**
-- **Issue**: `createVelocityTexture()` needed access to position data for rotation calculation
-- **Solution**: Modified function signature to accept `positionTexture` as parameter
-- **Implementation**: Calculate disk rotation based on x-z distance from galactic center
-- **Lesson**: Initial conditions for rotating systems require coupled position/velocity setup
-
-**2. Temperature Channel Routing**
-- **Issue**: Needed to pass temperature from velocity texture through vertex shader to fragment shader
-- **Solution**: Added `vTemperature` varying variable, sampled from `velocityTexture.w`
-- **Update Required**: Modified `RenderMaterial` to accept and update both position and velocity textures
-- **Lesson**: Adding new data channels requires updates across entire rendering pipeline
-
-**3. Color Gradient Complexity**
-- **Issue**: Single color per type looked flat, needed visual variety
-- **Solution**: Implemented piecewise linear color mixing based on temperature ranges
-- **Challenge**: Balancing physical accuracy with aesthetic appeal
-- **Result**: Used mix() function for smooth color transitions, split ranges for different temperature regimes
-
-### Performance Notes
-- **Current**: 65,536 particles @ 60fps (4x increase from Phase 1)
-- **Optimizations**: Gravity sampling every 4th particle (stride=4) compensates for increased count
-- **GPU Load**: Still well within budget on modern hardware
-- **Next Target**: Increase to 256×256 = 65,536 → 512×512 = 262,144 particles
-- **Bottleneck**: Will likely hit performance limit around 100-500K particles without Barnes-Hut
-
-### Next Steps
-- [ ] Performance profiling at various particle counts (128×128, 256×256, 512×512)
-- [ ] Barnes-Hut octree gravity optimization (required for 1M+ particles)
-- [ ] Particle state system (gas → star transitions based on density)
-- [ ] Galaxy collision scenarios (two rotating disks)
-- [ ] Visual effects improvements (bloom post-processing, motion trails)
+**Path to 5M+ Particles:**
+1. **Spatial Grid** (next) - Divide space into cells, only check nearby
+2. **Barnes-Hut Octree** - Approximate distant particles as single mass
+3. **WebGPU Compute** - 10-100x faster than WebGL fragment shaders
+4. **Hierarchical Time Steps** - Update distant particles less frequently
 
 ---
 
@@ -449,37 +342,27 @@ _Future enhancements..._
 
 ## Overall Progress
 
-**Current Phase**: Phase 2 (In Progress - 7/13 goals complete)
-**Overall Completion**: Phase 1 complete (20%), Phase 2 ~54% complete
+**Current Phase**: Phase 2 (In Progress - 8/13 goals complete, ~62%)
 **Project Start Date**: 2025-10-25
 **Phase 1 Completed**: 2025-10-25
 **Phase 2 Started**: 2025-10-26
 
 ### Key Metrics
-- **Performance**: 60fps (verified @ 65K particles)
-- **Particle Count**: 65,536 (current) → 262K (next test) → 1M+ (Phase 2 goal with Barnes-Hut)
-- **Particle Types**: 3 types fully implemented (dark matter, gas, stars)
-- **Temperature System**: Implemented with visual color variation
-- **Galaxy Simulation**: Rotating disk galaxy with dark matter halo
-- **Browser Support**: Modern browsers with WebGL 2.0
-- **Build Size**: Estimated ~500KB (Vite optimized)
+- **Performance**: 60fps @ 262K particles with bloom
+- **Particle Count**: 262,144 (512×512 texture)
+- **Particle Types**: 3 types (dark matter, gas, stars)
+- **Visual Effects**: Bloom post-processing, temperature-based colors
+- **Galaxy**: Rotating disk with exponential profile + dark matter halo
 
-### Technology Stack (Implemented)
-- ✅ Vite 5.4.21 - Build tool
-- ✅ React 18.3.1 - UI framework
-- ✅ React Three Fiber 8.17.10 - 3D rendering
-- ✅ Three.js 0.169.0 - WebGL engine
-- ✅ Zustand 5.0.1 - State management
-- ✅ TypeScript 5.6.3 - Type safety
-- ✅ vite-plugin-glsl - GLSL shader imports
+### Technology Stack
+- ✅ Vite, React, R3F, Three.js, Zustand, TypeScript
+- ✅ vite-plugin-glsl for shader imports
+- ✅ @react-three/postprocessing for bloom
 
-### Recent Accomplishments (2025-10-26 Session 2)
-- ✅ Scaled to 65,536 particles (4x increase) while maintaining 60fps
-- ✅ Implemented particle size variation based on type (0.7x - 1.8x)
-- ✅ Created realistic disk galaxy initial conditions with exponential radial profile
-- ✅ Added rotational velocities with flat rotation curve (typical of spiral galaxies)
-- ✅ Implemented temperature-based color gradients for gas and stars
-- ✅ Established complete data flow: position texture (type) + velocity texture (temperature)
+### Recent (2025-10-26)
+- ✅ Scaled from 16K → 65K → 262K particles (16x total increase)
+- ✅ Disk galaxy, rotation, temperature colors, size variation
+- ✅ Bloom post-processing, adaptive stride optimization
 
 ---
 

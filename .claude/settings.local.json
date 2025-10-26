@@ -4,7 +4,8 @@
       "Bash(yarn create:*)",
       "Bash(yarn)",
       "Bash(yarn add:*)",
-      "Bash(yarn dev)"
+      "Bash(yarn dev)",
+      "Bash(yarn remove:*)"
     ],
     "deny": [],
     "ask": []

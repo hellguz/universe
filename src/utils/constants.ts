@@ -6,6 +6,10 @@
 export const TEXTURE_SIZE = 256 // 256x256 = 65,536 particles
 export const PARTICLE_COUNT = TEXTURE_SIZE * TEXTURE_SIZE
 
+// Performance settings
+export const GRAVITY_CUTOFF_DISTANCE = 100.0 // Ignore particles beyond this distance
+export const MAX_FORCE_MAGNITUDE = 0.01 // Cap force to prevent instability
+
 // Physics constants (scaled for simulation)
 export const GRAVITATIONAL_CONSTANT = 0.0001 // Scaled G for visible effects
 export const TIMESTEP = 0.016 // ~60fps

@@ -1,5 +1,6 @@
 import { Canvas } from '@react-three/fiber'
 import { Suspense } from 'react'
+import { EffectComposer, Bloom } from '@react-three/postprocessing'
 import Camera from './Camera'
 import ParticleSystem from './ParticleSystem'
 import { CAMERA_FOV, CAMERA_NEAR, CAMERA_FAR } from '../utils/constants'
@@ -31,8 +32,15 @@ export default function Scene() {
         <ParticleSystem />
       </Suspense>
 
-      {/* Optional: subtle ambient light for debugging */}
-      {/* <ambientLight intensity={0.1} /> */}
+      {/* Post-processing effects */}
+      <EffectComposer>
+        <Bloom
+          intensity={0.8}
+          luminanceThreshold={0.2}
+          luminanceSmoothing={0.9}
+          mipmapBlur
+        />
+      </EffectComposer>
     </Canvas>
   )
 }

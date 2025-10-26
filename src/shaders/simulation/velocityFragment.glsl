@@ -21,10 +21,10 @@ void main() {
     // Calculate gravitational acceleration from subset of particles
     vec3 acceleration = vec3(0.0);
 
-    // Optimized N-body: sample every 4th particle (16x fewer calculations)
-    // This approximation works well for large-scale gravitational dynamics
+    // Optimized N-body with distance cutoff
     float texelSize = 1.0 / textureSize;
     float stride = 4.0; // Sample every 4th particle
+    float cutoffDistance = 100.0; // Ignore distant particles
 
     for (float y = 0.0; y < textureSize; y += stride) {
         for (float x = 0.0; x < textureSize; x += stride) {
@@ -43,6 +43,11 @@ void main() {
             // Calculate force vector
             vec3 diff = otherPos - position;
             float dist = length(diff);
+
+            // Distance cutoff optimization - ignore far particles
+            if (dist > cutoffDistance) {
+                continue;
+            }
 
             // Avoid singularity with softening parameter
             float softening = 1.0;
