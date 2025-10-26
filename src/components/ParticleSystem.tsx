@@ -26,7 +26,7 @@ export default function ParticleSystem() {
   const fbo = useMemo(() => {
     // Initial data textures
     const positionTexture = createPositionTexture()
-    const velocityTexture = createVelocityTexture()
+    const velocityTexture = createVelocityTexture(positionTexture)
 
     // Create two render targets for ping-pong rendering
     const rtOptions = {
@@ -147,7 +147,7 @@ export default function ParticleSystem() {
 
   // Create render material (for visualization)
   const renderMaterial = useMemo(() => {
-    return createRenderMaterial(fbo.positionRT1.texture)
+    return createRenderMaterial(fbo.positionRT1.texture, fbo.velocityRT1.texture)
   }, [fbo])
 
   // Simulation loop
@@ -195,8 +195,9 @@ export default function ParticleSystem() {
     // Swap position buffers
     fbo.currentPositionIndex = 1 - fbo.currentPositionIndex
 
-    // Update render material to use latest position texture
+    // Update render material to use latest position and velocity textures
     renderMaterial.uniforms.positionTexture.value = posWriteRT.texture
+    renderMaterial.uniforms.velocityTexture.value = velWriteRT.texture
 
     // Reset render target
     gl.setRenderTarget(null)

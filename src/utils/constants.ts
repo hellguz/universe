@@ -3,7 +3,7 @@
  */
 
 // Simulation settings
-export const TEXTURE_SIZE = 128 // 128x128 = 16,384 particles
+export const TEXTURE_SIZE = 256 // 256x256 = 65,536 particles
 export const PARTICLE_COUNT = TEXTURE_SIZE * TEXTURE_SIZE
 
 // Physics constants (scaled for simulation)

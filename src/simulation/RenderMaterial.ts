@@ -4,11 +4,13 @@ import renderFragmentShader from '../shaders/render/fragment.glsl'
 import { PARTICLE_SIZE } from '../utils/constants'
 
 export function createRenderMaterial(
-  positionTexture: THREE.Texture
+  positionTexture: THREE.Texture,
+  velocityTexture: THREE.Texture
 ): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     uniforms: {
       positionTexture: { value: positionTexture },
+      velocityTexture: { value: velocityTexture },
       particleSize: { value: PARTICLE_SIZE }
     },
     vertexShader: renderVertexShader,
