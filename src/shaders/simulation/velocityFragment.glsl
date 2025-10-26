@@ -58,8 +58,16 @@ void main() {
             float softening = 1.0;
             dist = max(dist, softening);
 
-            // Gravity calculation with stride compensation
-            float forceMag = G * otherMass * (stride * stride) / (dist * dist);
+            // Gravity calculation with resolution-independent scaling
+            // Each sampled particle represents (stride²) particles
+            float representedMass = otherMass * (stride * stride);
+            float forceMag = G * representedMass / (dist * dist);
+
+            // Normalize by (textureSize/256)² to keep consistent physics
+            // This ensures same behavior at 256, 512, 1024, 2048
+            float baseSize = 256.0;
+            float resolutionScale = (baseSize / textureSize) * (baseSize / textureSize);
+            forceMag *= resolutionScale;
 
             acceleration += normalize(diff) * forceMag;
         }
