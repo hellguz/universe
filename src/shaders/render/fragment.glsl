@@ -20,13 +20,13 @@ void main() {
 
     // Color based on particle type with temperature variation
     vec3 color;
-    float baseAlpha = alpha;
+    float baseAlpha = alpha * 0.2; // Scale down for 4M+ particles
 
     if (vType < 0.5) {
         // Dark Matter (type = 0) - ~60%
         // Faint purple - represents invisible dark matter scaffolding
         color = vec3(0.4, 0.2, 0.6);
-        baseAlpha *= 0.4; // Dim but visible
+        baseAlpha *= 0.5; // Dim but visible
         // Dark matter has no temperature variation
     } else if (vType < 1.5) {
         // Gas (type = 1) - ~35%
@@ -47,7 +47,7 @@ void main() {
                 (temp - 0.5) * 2.0
             );
         }
-        baseAlpha *= 0.9; // Bright
+        baseAlpha *= 1.5; // Bright
     } else {
         // Stars (type = 2) - ~5%
         // Temperature-based stellar colors: cool red giants to hot blue stars
@@ -67,7 +67,7 @@ void main() {
                 (temp - 0.6) / 0.4
             );
         }
-        baseAlpha *= 1.0; // Full brightness
+        baseAlpha *= 2.0; // Brighter stars
     }
 
     // Output with type-specific alpha

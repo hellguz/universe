@@ -3,7 +3,7 @@
  */
 
 // Simulation settings
-export const TEXTURE_SIZE = 2048 // 2048x2048 = 4,194,304 particles
+export const TEXTURE_SIZE = 2304 // 2304x2304 = 5,308,416 particles (5.3M)
 export const PARTICLE_COUNT = TEXTURE_SIZE * TEXTURE_SIZE
 
 // Performance settings - Fixed Sample Budget
