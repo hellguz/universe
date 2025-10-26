@@ -13,6 +13,8 @@ interface SimulationState {
   particleCount: number
   currentTime: number
   fps: number
+  useBarnesHut: boolean // Toggle between Barnes-Hut and old system
+  resetKey: number // Increment to trigger particle reinitialization
 
   // Actions
   togglePlay: () => void
@@ -20,6 +22,7 @@ interface SimulationState {
   setGravitationalConstant: (g: number) => void
   setCurrentTime: (time: number) => void
   setFps: (fps: number) => void
+  toggleBarnesHut: () => void
   reset: () => void
 }
 
@@ -31,6 +34,8 @@ export const useSimulationStore = create<SimulationState>((set) => ({
   particleCount: PARTICLE_COUNT,
   currentTime: 0,
   fps: 0,
+  useBarnesHut: true, // Start with Barnes-Hut enabled
+  resetKey: 0,
 
   // Actions
   togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
@@ -43,10 +48,19 @@ export const useSimulationStore = create<SimulationState>((set) => ({
 
   setFps: (fps: number) => set({ fps }),
 
-  reset: () => set({
+  toggleBarnesHut: () => set((state) => ({
+    useBarnesHut: !state.useBarnesHut,
+    // Reset simulation when switching modes to avoid incompatible state
+    resetKey: state.resetKey + 1,
+    currentTime: 0,
+    isPlaying: true
+  })),
+
+  reset: () => set((state) => ({
     isPlaying: false,
     timeScale: DEFAULT_TIME_SCALE,
     gravitationalConstant: GRAVITATIONAL_CONSTANT,
-    currentTime: 0
-  })
+    currentTime: 0,
+    resetKey: state.resetKey + 1
+  }))
 }))

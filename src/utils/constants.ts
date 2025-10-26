@@ -3,20 +3,32 @@
  */
 
 // Simulation settings
-export const TEXTURE_SIZE = 1024 // 2304x2304 = 5,308,416 particles (5.3M)
+export const TEXTURE_SIZE = 2048 // 2304x2304 = 5,308,416 particles (5.3M)
 export const PARTICLE_COUNT = TEXTURE_SIZE * TEXTURE_SIZE
 
-// Performance settings - Fixed Sample Budget
+// Barnes-Hut Octree settings
+export const MASS_GRID_SIZE = 64 // 3D grid resolution for mass distribution (64³ = 262K cells)
+export const MASS_GRID_TEXTURE_SIZE = 512 // 2D texture size to store flattened 3D grid (8x8 layers of 64x64)
+export const MASS_GRID_WORLD_SIZE = 300.0 // World space size covered by mass grid (increased for larger spread)
+export const BARNES_HUT_THETA = 0.5 // Opening angle criterion (0.5 = good balance)
+
+// Distance thresholds for hierarchical approximation
+export const NEAR_FIELD_DISTANCE = 20.0 // Use individual particles
+export const MID_FIELD_DISTANCE = 50.0 // Use small clusters (fine mipmap levels)
+export const FAR_FIELD_DISTANCE = 100.0 // Use large clusters (coarse mipmap levels)
+
+// Performance settings - Fixed Sample Budget (fallback if Barnes-Hut disabled)
 export const SAMPLES_PER_PARTICLE = 128 // Fixed computational budget per particle
 export const GRAVITY_CUTOFF_DISTANCE = 80.0 // Only check nearby particles
 
 // Physics constants (scaled for simulation)
 export const GRAVITATIONAL_CONSTANT = 0.0001 // Scaled G for visible effects
 export const TIMESTEP = 0.016 // ~60fps
+export const SOFTENING_LENGTH = 2.5 // Prevent singularities (larger for more particles)
 
 // Initial conditions
-export const INITIAL_SPREAD = 50 // Sphere radius for initial distribution
-export const INITIAL_VELOCITY_SPREAD = 0.1 // Random velocity magnitude
+export const INITIAL_SPREAD = 80 // Sphere radius for initial distribution (larger for more particles)
+export const INITIAL_VELOCITY_SPREAD = 0.08 // Random velocity magnitude (reduced for stability)
 
 // Rendering - optimized for high particle count
 export const PARTICLE_SIZE = 0.4

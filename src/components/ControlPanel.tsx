@@ -6,9 +6,11 @@ export default function ControlPanel() {
     isPlaying,
     timeScale,
     gravitationalConstant,
+    useBarnesHut,
     togglePlay,
     setTimeScale,
     setGravitationalConstant,
+    toggleBarnesHut,
     reset
   } = useSimulationStore()
 
@@ -57,8 +59,27 @@ export default function ControlPanel() {
       </div>
 
       <div className="control-group">
+        <label>Gravity Calculation Method</label>
+        <div className="button-group">
+          <button
+            onClick={toggleBarnesHut}
+            className={useBarnesHut ? 'active' : ''}
+            style={{ fontSize: '12px', padding: '8px 12px' }}
+          >
+            {useBarnesHut ? '🌌 Barnes-Hut (Fast)' : '⚡ Simple (Slow)'}
+          </button>
+        </div>
+        <label style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)', marginTop: '5px' }}>
+          {useBarnesHut
+            ? 'O(N log N) hierarchical approximation'
+            : 'O(N) fixed-sample approximation'
+          }
+        </label>
+      </div>
+
+      <div className="control-group">
         <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginTop: '10px' }}>
-          Phase 1: MVP - Basic Particle System
+          Compare performance by toggling gravity methods
         </label>
       </div>
     </div>

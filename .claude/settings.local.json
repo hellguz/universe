@@ -5,7 +5,8 @@
       "Bash(yarn)",
       "Bash(yarn add:*)",
       "Bash(yarn dev)",
-      "Bash(yarn remove:*)"
+      "Bash(yarn remove:*)",
+      "Bash(yarn type-check)"
     ],
     "deny": [],
     "ask": []
