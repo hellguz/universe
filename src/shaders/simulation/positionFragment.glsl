@@ -12,12 +12,12 @@ void main() {
     vec4 velData = texture2D(velocityTexture, vUv);
 
     vec3 position = posData.xyz;
-    float mass = posData.w;
+    float particleType = posData.w; // Particle type (0=dark matter, 1=gas, 2=stars)
     vec3 velocity = velData.xyz;
 
     // Integrate position
     position += velocity * delta;
 
-    // Output updated position
-    gl_FragColor = vec4(position, mass);
+    // Output updated position (preserve particle type)
+    gl_FragColor = vec4(position, particleType);
 }

@@ -6,16 +6,16 @@ uniform float particleSize;
 attribute vec2 particleUv; // UV for sampling FBO texture
 
 varying vec3 vPosition;
-varying float vMass;
+varying float vType; // Particle type: 0=dark matter, 1=gas, 2=stars
 
 void main() {
     // Sample position from FBO texture
     vec4 posData = texture2D(positionTexture, particleUv);
     vec3 pos = posData.xyz;
-    float mass = posData.w;
+    float particleType = posData.w;
 
     vPosition = pos;
-    vMass = mass;
+    vType = particleType; // Read particle type from texture (4th channel)
 
     // Transform to clip space
     vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);

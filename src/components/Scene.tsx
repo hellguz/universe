@@ -20,7 +20,7 @@ export default function Scene() {
         powerPreference: 'high-performance'
       }}
     >
-      {/* Black background */}
+      {/* Black background for maximum color contrast */}
       <color attach="background" args={['#000000']} />
 
       {/* Camera controls */}

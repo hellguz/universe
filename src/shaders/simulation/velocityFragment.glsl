@@ -15,7 +15,7 @@ void main() {
     vec4 velData = texture2D(velocityTexture, vUv);
 
     vec3 position = posData.xyz;
-    float mass = posData.w;
+    float particleType = posData.w; // Note: This is particle type, not used in gravity calc
     vec3 velocity = velData.xyz;
 
     // Calculate gravitational acceleration from subset of particles
@@ -37,7 +37,8 @@ void main() {
 
             vec4 otherPosData = texture2D(positionTexture, otherUv);
             vec3 otherPos = otherPosData.xyz;
-            float otherMass = otherPosData.w;
+            // Note: Using uniform mass=1.0 for all particles (type doesn't affect gravity yet)
+            float otherMass = 1.0;
 
             // Calculate force vector
             vec3 diff = otherPos - position;

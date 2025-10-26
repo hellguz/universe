@@ -43,21 +43,44 @@ export default function ParticleSystem() {
     const velocityRT1 = new THREE.WebGLRenderTarget(TEXTURE_SIZE, TEXTURE_SIZE, rtOptions)
     const velocityRT2 = new THREE.WebGLRenderTarget(TEXTURE_SIZE, TEXTURE_SIZE, rtOptions)
 
-    // Copy initial data to render targets
+    // Copy initial data to render targets using a shader that preserves RGBA
     const initScene = new THREE.Scene()
     const initCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
+
+    // Custom shader material to copy texture data (preserves all 4 channels)
+    const copyMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        tDiffuse: { value: null }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D tDiffuse;
+        varying vec2 vUv;
+        void main() {
+          gl_FragColor = texture2D(tDiffuse, vUv);
+        }
+      `
+    })
+
     const initQuad = new THREE.Mesh(
       new THREE.PlaneGeometry(2, 2),
-      new THREE.MeshBasicMaterial({ map: positionTexture })
+      copyMaterial
     )
     initScene.add(initQuad)
 
     // Initialize position RT
+    copyMaterial.uniforms.tDiffuse.value = positionTexture
     gl.setRenderTarget(positionRT1)
     gl.render(initScene, initCamera)
 
     // Initialize velocity RT
-    initQuad.material.map = velocityTexture
+    copyMaterial.uniforms.tDiffuse.value = velocityTexture
     gl.setRenderTarget(velocityRT1)
     gl.render(initScene, initCamera)
 
@@ -65,7 +88,7 @@ export default function ParticleSystem() {
 
     // Cleanup
     initQuad.geometry.dispose()
-    initQuad.material.dispose()
+    copyMaterial.dispose()
     positionTexture.dispose()
     velocityTexture.dispose()
 

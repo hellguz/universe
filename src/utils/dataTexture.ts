@@ -21,11 +21,20 @@ export function createDataTexture(size: number): THREE.DataTexture {
 
 /**
  * Initialize particle positions in a random sphere distribution
- * Format: [x, y, z, mass]
+ * Format: [x, y, z, type]
+ *
+ * Particle types:
+ * 0.0 = Dark Matter (60%)
+ * 1.0 = Gas (35%)
+ * 2.0 = Stars (5%)
  */
 export function createPositionTexture(): THREE.DataTexture {
   const size = TEXTURE_SIZE
   const data = new Float32Array(size * size * 4)
+
+  // Calculate type distribution thresholds
+  const darkMatterThreshold = 0.60
+  const gasThreshold = 0.60 + 0.35 // 0.95
 
   for (let i = 0; i < size * size; i++) {
     const i4 = i * 4
@@ -38,7 +47,20 @@ export function createPositionTexture(): THREE.DataTexture {
     data[i4 + 0] = radius * Math.sin(phi) * Math.cos(theta) // x
     data[i4 + 1] = radius * Math.sin(phi) * Math.sin(theta) // y
     data[i4 + 2] = radius * Math.cos(phi) // z
-    data[i4 + 3] = 1.0 // mass (uniform for now)
+
+    // Assign particle type based on random distribution
+    const rand = Math.random()
+    let particleType: number
+
+    if (rand < darkMatterThreshold) {
+      particleType = 0.0 // Dark Matter (60%)
+    } else if (rand < gasThreshold) {
+      particleType = 1.0 // Gas (35%)
+    } else {
+      particleType = 2.0 // Stars (5%)
+    }
+
+    data[i4 + 3] = particleType
   }
 
   const texture = new THREE.DataTexture(
