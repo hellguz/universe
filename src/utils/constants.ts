@@ -3,7 +3,7 @@
  */
 
 // Simulation settings
-export const TEXTURE_SIZE = 2304 // 2304x2304 = 5,308,416 particles (5.3M)
+export const TEXTURE_SIZE = 1024 // 2304x2304 = 5,308,416 particles (5.3M)
 export const PARTICLE_COUNT = TEXTURE_SIZE * TEXTURE_SIZE
 
 // Performance settings - Fixed Sample Budget
@@ -19,7 +19,7 @@ export const INITIAL_SPREAD = 50 // Sphere radius for initial distribution
 export const INITIAL_VELOCITY_SPREAD = 0.1 // Random velocity magnitude
 
 // Rendering - optimized for high particle count
-export const PARTICLE_SIZE = 0.2
+export const PARTICLE_SIZE = 0.4
 export const PARTICLE_COLOR = [1.0, 1.0, 1.0] // White
 
 // Time controls
