@@ -17,8 +17,7 @@ import {
 } from '../simulation/MassTexture'
 import {
   createReductionChain,
-  runReductionChain,
-  type ReductionChain
+  runReductionChain
 } from '../simulation/ReductionMaterial'
 import { TEXTURE_SIZE, PARTICLE_COUNT } from '../utils/constants'
 

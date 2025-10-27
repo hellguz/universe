@@ -100,14 +100,13 @@ export function createPositionTexture(): THREE.DataTexture {
 export function createVelocityTexture(positionTexture: THREE.DataTexture): THREE.DataTexture {
   const size = TEXTURE_SIZE
   const data = new Float32Array(size * size * 4)
-  const posData = positionTexture.image.data as Float32Array
+  const posData = positionTexture.image.data as unknown as Float32Array
 
   for (let i = 0; i < size * size; i++) {
     const i4 = i * 4
 
     // Get particle position and type
     const x = posData[i4 + 0]
-    const y = posData[i4 + 1]
     const z = posData[i4 + 2]
     const particleType = posData[i4 + 3]
 

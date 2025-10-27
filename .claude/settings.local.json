@@ -9,7 +9,8 @@
       "Bash(yarn type-check)",
       "Bash(git remote get-url:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(yarn build)"
     ],
     "deny": [],
     "ask": []
