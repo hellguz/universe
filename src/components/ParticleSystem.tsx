@@ -15,6 +15,11 @@ import {
   createMassGridMaterial,
   createMassNormalizeMaterial
 } from '../simulation/MassTexture'
+import {
+  createReductionChain,
+  runReductionChain,
+  type ReductionChain
+} from '../simulation/ReductionMaterial'
 import { TEXTURE_SIZE, PARTICLE_COUNT } from '../utils/constants'
 
 export default function ParticleSystem() {
@@ -137,7 +142,8 @@ export default function ParticleSystem() {
     massGridScene,
     massGridMaterial,
     massNormalizeMaterial,
-    normalizeScene
+    normalizeScene,
+    reductionChain
   } = useMemo(() => {
     const scene = new THREE.Scene()
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1)
@@ -193,6 +199,9 @@ export default function ParticleSystem() {
     const normalizeScene = new THREE.Scene()
     normalizeScene.add(normalizeMesh)
 
+    // GPU-based particle counting reduction chain
+    const reductionChain = createReductionChain(TEXTURE_SIZE)
+
     return {
       simulationScene: scene,
       simulationCamera: camera,
@@ -203,7 +212,8 @@ export default function ParticleSystem() {
       massGridScene: massScene,
       massGridMaterial: massGridMat,
       massNormalizeMaterial: massNormMat,
-      normalizeScene
+      normalizeScene,
+      reductionChain
     }
   }, [fbo, useBarnesHut, resetKey]) // Recreate materials when toggle changes or reset
 
@@ -346,32 +356,18 @@ export default function ParticleSystem() {
     // Reset render target
     gl.setRenderTarget(null)
 
-    // Count particle types every 0.5 seconds
-    if (simulationTime.current - lastCountTime.current > 0.5) {
+    // Count particle types every 2 seconds using GPU reduction
+    // Skip counting during fast-forward (timeScale > 20) for better performance
+    if (simulationTime.current - lastCountTime.current > 2.0 && timeScale < 20) {
       lastCountTime.current = simulationTime.current
 
-      // Read position texture from GPU
-      const buffer = new Float32Array(TEXTURE_SIZE * TEXTURE_SIZE * 4)
-      gl.setRenderTarget(finalPosRT)
-      gl.readRenderTargetPixels(finalPosRT, 0, 0, TEXTURE_SIZE, TEXTURE_SIZE, buffer)
-      gl.setRenderTarget(null)
-
-      // Count particle types
-      let darkMatter = 0
-      let gas = 0
-      let stars = 0
-
-      for (let i = 0; i < PARTICLE_COUNT; i++) {
-        const particleType = buffer[i * 4 + 3] // w component = particle type
-
-        if (particleType < 0.5) {
-          darkMatter++
-        } else if (particleType < 1.5) {
-          gas++
-        } else {
-          stars++
-        }
-      }
+      // Run GPU-based particle counting (much faster than CPU readback!)
+      const [darkMatter, gas, stars] = runReductionChain(
+        gl,
+        reductionChain,
+        finalPosRT.texture,
+        TEXTURE_SIZE
+      )
 
       // Update store
       setParticleCounts(darkMatter, gas, stars)
@@ -395,8 +391,11 @@ export default function ParticleSystem() {
       velocityStateMaterial.dispose()
       massGridMaterial.dispose()
       massNormalizeMaterial.dispose()
+      // Cleanup reduction chain
+      reductionChain.renderTargets.forEach(rt => rt.dispose())
+      reductionChain.materials.forEach(mat => mat.dispose())
     }
-  }, [fbo, particleGeometry, renderMaterial, velocityMaterial, positionMaterial, stateMaterial, velocityStateMaterial, massGridMaterial, massNormalizeMaterial])
+  }, [fbo, particleGeometry, renderMaterial, velocityMaterial, positionMaterial, stateMaterial, velocityStateMaterial, massGridMaterial, massNormalizeMaterial, reductionChain])
 
   return (
     <points ref={pointsRef} geometry={particleGeometry} material={renderMaterial} />
