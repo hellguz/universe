@@ -132,8 +132,8 @@ export function createVelocityTexture(positionTexture: THREE.DataTexture): THREE
 
       // Temperature varies with radius and type
       if (particleType > 1.5) {
-        // Stars: hot, varies slightly
-        temperature = 0.7 + Math.random() * 0.3 // 0.7-1.0 (hot)
+        // Stars: start as newborns with age 0.0
+        temperature = 0.0 // Age 0.0 (newborn blue stars)
       } else {
         // Gas: cooler in outer regions, warmer near center
         const radialFactor = Math.max(0, 1 - r / (INITIAL_SPREAD * 0.5))

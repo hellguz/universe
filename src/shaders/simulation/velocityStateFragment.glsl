@@ -1,9 +1,16 @@
-// Velocity state update shader - updates temperature when particle type changes
-// Companion to stateFragment.glsl, updates velocity/temperature data
+// Velocity state update shader - updates temperature/age when particle type changes
+// Companion to stateFragment.glsl, updates velocity/temperature/age data
 
 uniform sampler2D positionTexture; // Read updated particle types
-uniform sampler2D velocityTexture; // Read current velocity/temperature
+uniform sampler2D velocityTexture; // Read current velocity/temperature/age
+uniform sampler2D massTexture; // Hierarchical mass distribution for stellar feedback
 uniform float time;
+uniform float delta;
+uniform float agingRate; // Stellar aging rate per frame
+uniform float coolingRate; // Gas cooling rate per frame
+uniform float gridSize; // Mass grid size (64)
+uniform float worldSize; // World space size (300)
+uniform float massTextureSize; // Mass texture size (512)
 
 varying vec2 vUv;
 
@@ -17,6 +24,30 @@ float random(vec2 st) {
   return fract(sin(dot(st.xy, vec2(12.9898, 78.233)) + time) * 43758.5453123);
 }
 
+// Convert world position to grid coordinates
+vec3 worldToGrid(vec3 worldPos) {
+  vec3 centered = worldPos + vec3(worldSize * 0.5);
+  vec3 gridPos = (centered / worldSize) * gridSize;
+  return clamp(gridPos, vec3(0.0), vec3(gridSize - 1.0));
+}
+
+// Convert 3D grid coordinates to 2D texture UV
+vec2 grid3DTo2D(vec3 gridPos) {
+  float layersPerRow = massTextureSize / gridSize; // 8 for 512/64
+
+  float z = gridPos.z;
+  float layerX = mod(z, layersPerRow);
+  float layerY = floor(z / layersPerRow);
+
+  float pixelX = layerX * gridSize + gridPos.x;
+  float pixelY = layerY * gridSize + gridPos.y;
+
+  return vec2(
+    (pixelX + 0.5) / massTextureSize,
+    (pixelY + 0.5) / massTextureSize
+  );
+}
+
 void main() {
     // Read current state
     vec4 posData = texture2D(positionTexture, vUv);
@@ -24,18 +55,41 @@ void main() {
 
     float particleType = posData.w;
     vec3 velocity = velData.xyz;
-    float temperature = velData.w;
+    float tempOrAge = velData.w; // Temperature for gas, age for stars
 
-    // Update temperature based on particle type
-    // This ensures newly formed stars get hot temperature
-    if (particleType > 1.5) {
-        // Star: ensure hot temperature if not already set
-        if (temperature < 0.7) {
-            // Newly formed star - heat it up!
-            temperature = 0.7 + random(vUv) * 0.3; // 0.7-1.0 (hot young star)
+    // ===== STAR AGING =====
+    if (particleType > 1.5 && particleType < 3.0) {
+        // Stars (main sequence and red giants): velocity.w stores AGE (0.0 = newborn, 1.0 = ancient)
+        // Stars now form from cold gas (temp 0.1-0.4), so they inherit reasonable starting ages
+        // No reset needed - just age normally!
+        tempOrAge = min(tempOrAge + agingRate * delta, 0.99);
+    }
+    // ===== GAS COOLING & STELLAR FEEDBACK HEATING =====
+    else if (particleType > 0.5 && particleType < 1.5) {
+        // Gas: velocity.w stores TEMPERATURE (0.0 = cold, 1.0 = hot)
+
+        // Check local density from mass grid
+        vec3 position = posData.xyz;
+        vec3 gridPos = worldToGrid(position);
+        vec2 uv = grid3DTo2D(gridPos);
+        vec4 massData = texture2D(massTexture, uv);
+        float localDensity = massData.w; // Total mass in this cell
+
+        // STELLAR FEEDBACK: Gas in high-density regions (star-forming/stellar zones) gets heated
+        // High density indicates presence of stars or star formation
+        float heatingThreshold = 2.0; // Same as star formation density threshold
+        if (localDensity > heatingThreshold) {
+            // Heat up gas in stellar neighborhoods
+            // More density = more heating (young star clusters are hot!)
+            float heatingAmount = 0.001 * (localDensity - heatingThreshold);
+            tempOrAge = min(tempOrAge + heatingAmount * delta, 0.95); // Heat up, cap at 0.95
+        } else {
+            // Gradually cool down gas in low-density regions
+            tempOrAge = max(tempOrAge - coolingRate * delta, 0.1); // Min temperature 0.1
         }
     }
+    // Dark matter: no temperature or age
 
-    // Output updated velocity and temperature
-    gl_FragColor = vec4(velocity, temperature);
+    // Output updated velocity and temperature/age
+    gl_FragColor = vec4(velocity, tempOrAge);
 }

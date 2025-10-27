@@ -170,10 +170,11 @@ export default function ParticleSystem() {
       fbo.massRT2.texture
     )
 
-    // Material for velocity state update (temperature changes)
+    // Material for velocity state update (temperature changes + heating from stars)
     const matVelocityState = createVelocityStateMaterial(
       fbo.positionRT1.texture,
-      fbo.velocityRT1.texture
+      fbo.velocityRT1.texture,
+      fbo.massRT2.texture
     )
 
     const mesh = new THREE.Mesh(geometry, matVelocity)
@@ -336,7 +337,9 @@ export default function ParticleSystem() {
 
       velocityStateMaterial.uniforms.positionTexture.value = finalPosRT.texture
       velocityStateMaterial.uniforms.velocityTexture.value = velStateReadRT.texture
+      velocityStateMaterial.uniforms.massTexture.value = fbo.massRT2.texture
       velocityStateMaterial.uniforms.time.value = simulationTime.current
+      velocityStateMaterial.uniforms.delta.value = scaledDelta
 
       mesh.material = velocityStateMaterial
       gl.setRenderTarget(velStateWriteRT)

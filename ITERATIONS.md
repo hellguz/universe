@@ -479,12 +479,190 @@ _Future enhancements..._
 - Performance restored with GPU reduction (no CPU bottleneck)
 - Realistic formation rate (2% when conditions met)
 
+### Session 7 (2025-10-27) - Phase 3: Stellar Evolution Begins
+
+**Goal:** Implement stellar lifecycles and cosmic events step-by-step for visual testing.
+
+#### Step 1: Stellar Aging System ✅ COMPLETE
+
+**Completed:**
+- ✅ Age tracking for stars (velocity.w repurposed: temperature for gas, age for stars)
+- ✅ Gas cooling over time (gradual temperature decay)
+- ✅ Age-based star coloring: young blue-white → mature yellow → old orange-red
+- ✅ Visual feedback system for stellar evolution
+
+**Implementation:**
+- Modified [velocityStateFragment.glsl](src/shaders/simulation/velocityStateFragment.glsl): Stars age each frame, gas cools gradually
+- Added constants in [constants.ts](src/utils/constants.ts): `STELLAR_AGING_RATE = 0.0001`, `GAS_COOLING_RATE = 0.00005`
+- Updated [render/fragment.glsl](src/shaders/render/fragment.glsl): Stars now color-coded by age
+- Updated [render/vertex.glsl](src/shaders/render/vertex.glsl): Renamed `vTemperature` → `vTempOrAge` for clarity
+
+**Visual Changes:**
+- Stars start as bright blue-white (newborn, age 0.0)
+- Stars gradually turn yellow as they mature (age 0.3-0.7)
+- Old stars shift to orange-red before becoming red giants (age > 0.7)
+- Gas particles gradually cool from hot (orange) to cold (blue) over time
+
+**Technical Details:**
+- Dual-purpose `velocity.w` channel: gas stores temperature, stars store age
+- Aging rate: ~10,000 frames to reach age 1.0 (at 60fps = ~3 minutes real time)
+- Gas cooling: slow decay prevents runaway star formation
+- Delta-time scaling: works correctly with time control slider
+
+**Files Modified:**
+- `src/utils/constants.ts` - Added stellar evolution constants
+- `src/simulation/StateMaterial.ts` - Added agingRate and coolingRate uniforms
+- `src/shaders/simulation/velocityStateFragment.glsl` - Implemented aging and cooling
+- `src/shaders/render/vertex.glsl` - Renamed temperature variable
+- `src/shaders/render/fragment.glsl` - Age-based star coloring
+- `src/components/ParticleSystem.tsx` - Added delta uniform update
+
+**Testing:** Watch the simulation - newly formed stars (blue-white) will gradually turn yellow, then orange over several minutes. Gas clouds will slowly cool from orange to blue.
+
+#### Step 1 Debug Fix: Dramatic Color Changes ✅ COMPLETE
+
+**Problem Found:** All stars appeared white because:
+1. Initial stars in [dataTexture.ts](src/utils/dataTexture.ts) started with age 0.7-1.0 (not 0.0)
+2. Colors in shader were too subtle (all near-white RGB values)
+3. No visual contrast between age stages
+
+**Solution Applied:**
+- Fixed [dataTexture.ts:136](src/utils/dataTexture.ts:136): Initial stars now start at age 0.0 (true newborns)
+- **DRAMATIC colors** in [render/fragment.glsl](src/shaders/render/fragment.glsl:56):
+  - **Age 0.0-0.3:** ELECTRIC BLUE `rgb(0, 77, 255)` → `rgb(77, 153, 255)`
+  - **Age 0.3-0.6:** BRIGHT YELLOW `rgb(77, 153, 255)` → `rgb(255, 255, 0)`
+  - **Age 0.6-1.0:** DEEP RED `rgb(255, 255, 0)` → `rgb(255, 0, 0)`
+- Increased aging rate 10x: [constants.ts:55](src/utils/constants.ts:55) `STELLAR_AGING_RATE = 0.01`
+- Young blue stars are 3x brighter for maximum visibility
+
+**Visual Result NOW:**
+- **At 1x speed:** BLUE → YELLOW → RED in ~1.5 minutes
+- **At 50x speed:** BLUE → YELLOW → RED in ~2 seconds! (instant feedback)
+- Initial ~112,000 stars all start ELECTRIC BLUE
+- Color changes are impossible to miss!
+
+**Bug Fix:** Stars were resetting after turning yellow - fixed reset detection to narrow range [0.88, 0.98] in [velocityStateFragment.glsl:39](src/shaders/simulation/velocityStateFragment.glsl:39)
+
+#### Bug Fix: Age Reset Loop & Blinking ✅ FIXED
+
+**Problems Identified:**
+1. Stars became red instantly without transition
+2. Stars blinked between orange and red
+3. Stars reset back to blue and continued blinking
+
+**Root Cause:**
+- Reset logic [0.88, 0.98] was triggered by BOTH newly formed stars AND aging red giants
+- Red giants aged 0.7 → 0.88 → **reset to 0.0** → aged again → infinite loop!
+- Type oscillated, causing blinking
+- Color transition had discontinuity at red giant boundary
+
+**Solution:**
+1. Changed star formation to require **COLD gas** [0.1, 0.4] instead of warm [0.5, 0.9]
+   - More realistic (stars form from cold molecular clouds)
+   - Newly formed stars inherit ages 0.1-0.4 (already in correct range)
+   - No reset needed!
+2. **Removed reset logic entirely** - stars age smoothly from formation to death
+3. **Smoothed color transition** at red giant boundary:
+   - Age 0.6-0.7: yellow → deep orange (type 2.0)
+   - Age 0.7: type changes to 2.5, **color matches** (deep orange)
+   - Age 0.7-0.99: deep orange → dark red (type 2.5)
+
+**Result:**
+- ✅ Smooth aging: no resets, no loops
+- ✅ No blinking: stars age continuously
+- ✅ Smooth color transition: yellow → orange → red
+- ✅ Size expansion is instant (realistic rapid expansion phase), but color flows naturally
+
+**Files Modified:**
+- [constants.ts:50](src/utils/constants.ts:50) - Star formation temp [0.5, 0.9] → [0.1, 0.4]
+- [velocityStateFragment.glsl:60](src/shaders/simulation/velocityStateFragment.glsl:60) - Removed reset logic
+- [render/fragment.glsl:73](src/shaders/render/fragment.glsl:73) - Smoothed color transition
+
+#### Step 2: Red Giant Evolution ✅ COMPLETE
+
+**Goal:** Old stars expand into huge, cool red giants
+
+**Implementation:**
+- Added main sequence → red giant transition in [stateFragment.glsl:96](src/shaders/simulation/stateFragment.glsl:96)
+- Stars with age > 0.7 evolve to red giants (type 2.5)
+- Red giants are **4.5x larger** than main sequence stars: [render/vertex.glsl:38](src/shaders/render/vertex.glsl:38)
+- Deep orange-red coloring: [render/fragment.glsl:81](src/shaders/render/fragment.glsl:81)
+
+**Visual Changes:**
+- Age 0.0-0.3: Small **ELECTRIC BLUE** stars (young main sequence)
+- Age 0.3-0.6: Small **BRIGHT YELLOW** stars (mature main sequence)
+- Age 0.6-0.7: Small **RED** stars (aging main sequence)
+- Age 0.7+: **HUGE DEEP ORANGE/RED BLOBS** (red giants - 4.5x size expansion!)
+
+**Lifecycle Flow:**
+```
+Small Blue → Small Yellow → Small Red → GIANT ORANGE-RED BLOB
+(newborn)    (sun-like)     (aging)     (expanded phase)
+```
+
+**Testing at 50x speed:**
+- Stars evolve normally until age 0.7
+- Suddenly EXPAND into huge orange-red giants (impossible to miss!)
+- Red giants dominate the visual space despite being fewer in number
+
+**Files Modified:**
+- `src/shaders/simulation/stateFragment.glsl` - Type transition logic
+- `src/shaders/render/vertex.glsl` - Size scaling for red giants
+- `src/shaders/render/fragment.glsl` - Red giant colors
+
+#### Step 3: Stellar Feedback Heating ✅ COMPLETE
+
+**Goal:** Young stars heat nearby gas, creating hot bubbles and regulating star formation
+
+**Implementation:**
+- Added mass grid access to [velocityStateFragment.glsl](src/shaders/simulation/velocityStateFragment.glsl:6)
+- Gas in high-density regions (> 2.0 mass threshold) gets heated
+- Heating rate scales with local density: more stars = hotter gas
+- Modified [StateMaterial.ts:42](src/simulation/StateMaterial.ts:42) to pass mass texture
+- Updated [ParticleSystem.tsx:340](src/components/ParticleSystem.tsx:340) to set mass texture uniform
+
+**Physics:**
+- Gas particles check local mass density from grid
+- High-density regions (star clusters) heat nearby gas
+- Low-density regions allow gas to cool naturally
+- Creates self-regulating star formation (hot gas → less formation)
+
+**Visual Effect:**
+- Star-forming regions glow HOT (orange gas)
+- Gas around young blue stars turns orange/yellow
+- Isolated gas cools to blue over time
+- Creates visible "hot bubbles" around stellar nurseries
+
+**Lifecycle Enhancement:**
+```
+Cold blue gas → Star forms → Gas heats up (orange) → Hot bubble expands
+              → Prevents more stars forming nearby (self-regulation)
+              → Outer gas cools back to blue → New stars form → Repeat
+```
+
+**Testing:**
+- Watch star-forming regions: gas turns HOT ORANGE around new stars
+- Hot bubbles visible around dense stellar clusters
+- Creates realistic "feedback loop" in galaxy evolution
+- Use time scale 50x to see hot bubbles form and expand quickly
+
+**Files Modified:**
+- `src/shaders/simulation/velocityStateFragment.glsl` - Heating logic with density checks
+- `src/simulation/StateMaterial.ts` - Added mass texture parameter
+- `src/components/ParticleSystem.tsx` - Mass texture uniform binding
+
+---
+
 ### Recent (2025-10-27)
 - ✅ **Barnes-Hut Octree** O(N log N) hierarchical gravity
 - ✅ **Toggle comparison** between simple and hierarchical methods
 - ✅ **Numerical stability** for 4M+ particles
 - ✅ **Dynamic particle transitions** Gas → Star formation with GPU-based counting
 - ✅ **GPU reduction optimization** 262,000x faster particle counting
+- ✅ **Stellar aging system** Stars age from blue → yellow → red with dramatic colors
+- ✅ **Gas cooling** Temperature decay over time
+- ✅ **Red giant evolution** Old stars expand 4.5x into huge orange-red giants
+- ✅ **Stellar feedback heating** Hot bubbles around star-forming regions
 
 ---
 

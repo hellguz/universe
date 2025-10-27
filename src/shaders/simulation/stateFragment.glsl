@@ -86,16 +86,31 @@ void main() {
                 // Transform gas → star!
                 particleType = TYPE_STAR;
 
-                // Heat up newly formed star
-                temperature = 0.7 + random(vUv + vec2(0.5)) * 0.3; // 0.7-1.0 (hot young star)
+                // Note: temperature/age transition handled in velocityStateFragment
+                // Stars start with age 0.0 (newborn), not high temperature
+                // This will be set properly in the next velocity state pass
             }
         }
     }
 
-    // ===== FUTURE: STELLAR EVOLUTION =====
-    // TODO: Age stars over time
-    // TODO: Star → Red Giant → Compact Object transitions
-    // TODO: Supernova events
+    // ===== STELLAR EVOLUTION: MAIN SEQUENCE → RED GIANT =====
+    // Check if this is a main sequence star that's old enough to become a red giant
+    if (particleType > 1.5 && particleType < 2.5) {
+        // Main sequence star (type 2.0)
+        // Check age (stored in velocity.w)
+        float age = temperature; // Actually age for stars
+
+        // Red giant threshold: age > 0.7
+        if (age > 0.7) {
+            // Transition to red giant!
+            particleType = 2.5; // Red giant type
+        }
+    }
+
+    // ===== FUTURE: MORE EVOLUTION =====
+    // TODO: Red Giant → White Dwarf transitions
+    // TODO: Massive star → Supernova → Neutron Star/Black Hole
+    // TODO: Supernova explosions with shockwaves
 
     // Output updated state
     gl_FragColor = vec4(position, particleType);

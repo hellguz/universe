@@ -8,7 +8,7 @@ attribute vec2 particleUv; // UV for sampling FBO texture
 
 varying vec3 vPosition;
 varying float vType; // Particle type: 0=dark matter, 1=gas, 2=stars
-varying float vTemperature; // Temperature: 0.0-1.0
+varying float vTempOrAge; // Temperature for gas (0-1), Age for stars (0-1)
 
 void main() {
     // Sample position and velocity from FBO textures
@@ -16,11 +16,11 @@ void main() {
     vec4 velData = texture2D(velocityTexture, particleUv);
     vec3 pos = posData.xyz;
     float particleType = posData.w;
-    float temperature = velData.w;
+    float tempOrAge = velData.w; // Dual-purpose: temperature for gas, age for stars
 
     vPosition = pos;
     vType = particleType; // Read particle type from texture (4th channel)
-    vTemperature = temperature; // Read temperature from velocity texture (4th channel)
+    vTempOrAge = tempOrAge; // Gas: temperature (0=cold, 1=hot) | Stars: age (0=young, 1=old)
 
     // Transform to clip space
     vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
@@ -32,8 +32,12 @@ void main() {
         typeScale = 0.7; // Dark matter: smaller, dimmer
     } else if (particleType < 1.5) {
         typeScale = 1.0; // Gas: standard size
+    } else if (particleType < 2.5) {
+        typeScale = 1.8; // Main sequence stars: larger, brighter points
+    } else if (particleType < 3.0) {
+        typeScale = 4.5; // Red giants: HUGE (3-5x larger than main sequence)
     } else {
-        typeScale = 1.8; // Stars: larger, brighter points
+        typeScale = 1.2; // Compact objects: small
     }
 
     // Particle size based on distance (perspective scaling)
