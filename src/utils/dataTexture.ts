@@ -32,10 +32,11 @@ export function createPositionTexture(): THREE.DataTexture {
   const size = TEXTURE_SIZE
   const data = new Float32Array(size * size * 4)
 
-  // Calculate type distribution thresholds - Scientific initial conditions
-  // Universe starts with NO STARS (they form from gas over time)
+  // Calculate type distribution thresholds
+  // Start with some stars already formed (5%)
   const darkMatterThreshold = 0.60 // 60% dark matter
-  const gasThreshold = 1.00 // 40% gas, 0% stars initially
+  const gasThreshold = 0.95 // 35% gas
+  // 5% stars (remaining)
 
   for (let i = 0; i < size * size; i++) {
     const i4 = i * 4
@@ -46,9 +47,10 @@ export function createPositionTexture(): THREE.DataTexture {
 
     if (rand < darkMatterThreshold) {
       particleType = 0.0 // Dark Matter (60%)
+    } else if (rand < gasThreshold) {
+      particleType = 1.0 // Gas (35%)
     } else {
-      particleType = 1.0 // Gas (40%) - all remaining particles are gas
-      // NO STARS AT START - universe begins with only gas + dark matter!
+      particleType = 2.0 // Stars (5%) - main sequence stars
     }
 
     // Disk galaxy distribution
@@ -133,7 +135,25 @@ export function createVelocityTexture(positionTexture: THREE.DataTexture): THREE
       // Gas temperature: Primordial gas starts warm (cools rapidly to formation range)
       // Starting closer to formation range (0.1-0.4) for faster star formation
       temperature = 0.5 + Math.random() * 0.2 // 0.5-0.7 (warm, cools in ~5 seconds)
-      // Note: No stars exist yet, so no age initialization needed
+    } else if (particleType > 1.5) {
+      // Stars: inherit rotation from gas + slight random motion
+      if (r > 0.01) {
+        const rotationSpeed = INITIAL_ROTATION_SPEED
+        const angle = Math.atan2(z, x)
+        const vx = -rotationSpeed * Math.sin(angle)
+        const vz = rotationSpeed * Math.cos(angle)
+
+        data[i4 + 0] = vx + (Math.random() - 0.5) * INITIAL_VELOCITY_SPREAD * 0.2
+        data[i4 + 1] = (Math.random() - 0.5) * INITIAL_VELOCITY_SPREAD * 0.1
+        data[i4 + 2] = vz + (Math.random() - 0.5) * INITIAL_VELOCITY_SPREAD * 0.2
+      } else {
+        data[i4 + 0] = (Math.random() - 0.5) * INITIAL_VELOCITY_SPREAD * 0.2
+        data[i4 + 1] = (Math.random() - 0.5) * INITIAL_VELOCITY_SPREAD * 0.2
+        data[i4 + 2] = (Math.random() - 0.5) * INITIAL_VELOCITY_SPREAD * 0.2
+      }
+
+      // Stars start as newborn (age = 0.0)
+      temperature = 0.0
     } else {
       // Dark matter halo: small random velocities
       data[i4 + 0] = (Math.random() - 0.5) * INITIAL_VELOCITY_SPREAD * 0.5 // vx
