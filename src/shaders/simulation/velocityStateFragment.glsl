@@ -90,7 +90,7 @@ void main() {
 
         // STELLAR FEEDBACK: Gas in high-density regions (star-forming/stellar zones) gets heated
         // High density indicates presence of stars or star formation
-        float heatingThreshold = 2.0; // Same as star formation density threshold
+        float heatingThreshold = 2.0; // Higher than star formation threshold (0.8) to allow cooling first
         if (localDensity > heatingThreshold) {
             // Heat up gas in stellar neighborhoods
             // More density = more heating (young star clusters are hot!)

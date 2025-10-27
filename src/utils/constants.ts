@@ -46,10 +46,10 @@ export const CAMERA_NEAR = 0.1
 export const CAMERA_FAR = 10000
 
 // Star Formation & Evolution
-export const STAR_FORMATION_DENSITY_THRESHOLD = 2.5 // Mass units per cell for star formation (requires local clustering)
+export const STAR_FORMATION_DENSITY_THRESHOLD = 0.8 // Mass units per cell for star formation (lowered to match actual clustering)
 export const STAR_FORMATION_TEMP_MIN = 0.1 // Minimum temperature for star formation (cold molecular clouds)
 export const STAR_FORMATION_TEMP_MAX = 0.4 // Maximum temperature for star formation (cool, not hot)
-export const STAR_FORMATION_RATE = 0.02 // Probability per frame (2% chance when conditions met - gradual formation)
+export const STAR_FORMATION_RATE = 0.1 // Probability per frame (10% chance when conditions met - faster for testing)
 
 // Stellar Evolution
 export const STELLAR_AGING_RATE = 0.01 // How fast stars age per frame (0.01 = ~100 frames to reach age 1.0, very fast for visual testing)
@@ -58,4 +58,4 @@ export const WHITE_DWARF_AGE_THRESHOLD = 0.95 // Red giants become white dwarfs 
 export const SUPERNOVA_AGE_THRESHOLD = 0.85 // Massive stars explode at this age
 
 // Gas Evolution
-export const GAS_COOLING_RATE = 0.00005 // How fast gas cools per frame (gradual cooling)
+export const GAS_COOLING_RATE = 0.005 // How fast gas cools per frame (100x faster for testing)
