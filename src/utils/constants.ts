@@ -32,12 +32,12 @@ export const INITIAL_VELOCITY_SPREAD = 0.05 // Random velocity magnitude (reduce
 export const INITIAL_ROTATION_SPEED = 0.08 // Base rotation speed for galaxy (angular momentum conservation)
 
 // Rendering - optimized for high particle count
-export const PARTICLE_SIZE = 0.4
+export const PARTICLE_SIZE = 0.3
 export const PARTICLE_COLOR = [1.0, 1.0, 1.0] // White
 
 // Time controls
 export const MIN_TIME_SCALE = 1
-export const MAX_TIME_SCALE = 100
+export const MAX_TIME_SCALE = 10
 export const DEFAULT_TIME_SCALE = 1
 
 // Universe time scaling: EXACT scientific mapping - 10 minutes = 13.8 Gyr
