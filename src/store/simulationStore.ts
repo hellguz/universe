@@ -12,6 +12,7 @@ interface SimulationState {
   gravitationalConstant: number
   particleCount: number
   currentTime: number
+  universeAge: number // Universe age in Gyr (gigayears)
   fps: number
   useBarnesHut: boolean // Toggle between Barnes-Hut and old system
   resetKey: number // Increment to trigger particle reinitialization
@@ -30,6 +31,7 @@ interface SimulationState {
   setTimeScale: (scale: number) => void
   setGravitationalConstant: (g: number) => void
   setCurrentTime: (time: number) => void
+  setUniverseAge: (age: number) => void
   setFps: (fps: number) => void
   toggleBarnesHut: () => void
   reset: () => void
@@ -44,6 +46,7 @@ export const useSimulationStore = create<SimulationState>((set) => ({
   gravitationalConstant: GRAVITATIONAL_CONSTANT,
   particleCount: PARTICLE_COUNT,
   currentTime: 0,
+  universeAge: 0, // Starts at 0 Gyr (Big Bang)
   fps: 0,
   useBarnesHut: true, // Start with Barnes-Hut enabled
   resetKey: 0,
@@ -67,6 +70,8 @@ export const useSimulationStore = create<SimulationState>((set) => ({
 
   setCurrentTime: (time: number) => set({ currentTime: time }),
 
+  setUniverseAge: (age: number) => set({ universeAge: age }),
+
   setFps: (fps: number) => set({ fps }),
 
   setParticleCounts: (darkMatter: number, gas: number, stars: number) => set({
@@ -86,6 +91,7 @@ export const useSimulationStore = create<SimulationState>((set) => ({
     // Reset simulation when switching modes to avoid incompatible state
     resetKey: state.resetKey + 1,
     currentTime: 0,
+    universeAge: 0,
     isPlaying: true
   })),
 
@@ -94,6 +100,7 @@ export const useSimulationStore = create<SimulationState>((set) => ({
     timeScale: DEFAULT_TIME_SCALE,
     gravitationalConstant: GRAVITATIONAL_CONSTANT,
     currentTime: 0,
+    universeAge: 0,
     resetKey: state.resetKey + 1,
     // Reset counts to initial values
     darkMatterCount: Math.floor(PARTICLE_COUNT * 0.60),

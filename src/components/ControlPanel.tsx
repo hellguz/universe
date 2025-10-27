@@ -1,5 +1,5 @@
 import { useSimulationStore } from '../store/simulationStore'
-import { MIN_TIME_SCALE, MAX_TIME_SCALE } from '../utils/constants'
+import { MIN_TIME_SCALE, MAX_TIME_SCALE, UNIVERSE_TIME_SCALE } from '../utils/constants'
 
 export default function ControlPanel() {
   const {
@@ -7,6 +7,8 @@ export default function ControlPanel() {
     timeScale,
     gravitationalConstant,
     useBarnesHut,
+    currentTime,
+    universeAge,
     darkMatterCount,
     gasCount,
     starCount,
@@ -20,9 +22,40 @@ export default function ControlPanel() {
     reset
   } = useSimulationStore()
 
+  // Format universe age display
+  const formatUniverseAge = () => {
+    if (universeAge < 1) {
+      return `${(universeAge * 1000).toFixed(0)} Myr` // Million years
+    } else {
+      return `${universeAge.toFixed(2)} Gyr` // Billion years
+    }
+  }
+
+  // Format real time display
+  const formatRealTime = () => {
+    const minutes = Math.floor(currentTime / 60)
+    const seconds = Math.floor(currentTime % 60)
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`
+  }
+
   return (
     <div className="control-panel">
       <h3>Universe Simulator</h3>
+
+      <div className="control-group" style={{ borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '12px', marginBottom: '12px' }}>
+        <label style={{ fontSize: '13px', color: 'rgba(255, 220, 150, 1)', marginBottom: '8px' }}>
+          🌌 Universe Age
+        </label>
+        <div style={{ fontSize: '20px', fontWeight: 'bold', color: 'rgba(255, 230, 180, 1)', marginBottom: '4px' }}>
+          {formatUniverseAge()}
+        </div>
+        <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', marginBottom: '2px' }}>
+          Real time: {formatRealTime()} (1s = {UNIVERSE_TIME_SCALE} Myr)
+        </div>
+        <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.4)', fontStyle: 'italic' }}>
+          Real universe age: ~13.8 Gyr
+        </div>
+      </div>
 
       <div className="control-group">
         <label>Particle Counts</label>

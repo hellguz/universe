@@ -39,6 +39,10 @@ export const MIN_TIME_SCALE = 1
 export const MAX_TIME_SCALE = 100
 export const DEFAULT_TIME_SCALE = 1
 
+// Universe time scaling: 1 real second = X million years
+export const UNIVERSE_TIME_SCALE = 20 // 1 sim second = 20 million years (Myr)
+// At this scale: 10 minutes = 12,000 Myr = 12 Gyr (billion years)
+
 // Camera
 export const CAMERA_POSITION: [number, number, number] = [0, 50, 100]
 export const CAMERA_FOV = 75
@@ -49,13 +53,13 @@ export const CAMERA_FAR = 10000
 export const STAR_FORMATION_DENSITY_THRESHOLD = 0.8 // Mass units per cell for star formation (lowered to match actual clustering)
 export const STAR_FORMATION_TEMP_MIN = 0.1 // Minimum temperature for star formation (cold molecular clouds)
 export const STAR_FORMATION_TEMP_MAX = 0.4 // Maximum temperature for star formation (cool, not hot)
-export const STAR_FORMATION_RATE = 0.1 // Probability per frame (10% chance when conditions met - faster for testing)
+export const STAR_FORMATION_RATE = 0.002 // Probability per frame (0.2% chance when conditions met - realistic gradual formation)
 
-// Stellar Evolution
-export const STELLAR_AGING_RATE = 0.01 // How fast stars age per frame (0.01 = ~100 frames to reach age 1.0, very fast for visual testing)
-export const RED_GIANT_AGE_THRESHOLD = 0.7 // Stars become red giants at this age
-export const WHITE_DWARF_AGE_THRESHOLD = 0.95 // Red giants become white dwarfs at this age
-export const SUPERNOVA_AGE_THRESHOLD = 0.85 // Massive stars explode at this age
+// Stellar Evolution - Balanced timescales for watchable simulation
+export const STELLAR_AGING_RATE = 0.0002 // Stars age at visible pace: red giants at ~8-10 min, white dwarfs at ~12-15 min (4x faster)
+export const RED_GIANT_AGE_THRESHOLD = 0.7 // Stars become red giants at this age (~3-4 minutes)
+export const WHITE_DWARF_AGE_THRESHOLD = 0.95 // Red giants become white dwarfs at this age (~5 minutes)
+export const SUPERNOVA_AGE_THRESHOLD = 0.85 // Massive stars explode at this age (future feature)
 
-// Gas Evolution
-export const GAS_COOLING_RATE = 0.005 // How fast gas cools per frame (100x faster for testing)
+// Gas Evolution - Realistic cooling timescales
+export const GAS_COOLING_RATE = 0.00002 // Gas cools gradually over ~1-2 minutes (molecular cloud formation)

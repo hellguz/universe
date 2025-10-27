@@ -25,7 +25,8 @@ import {
   MASS_GRID_SIZE,
   MASS_GRID_TEXTURE_SIZE,
   MASS_GRID_WORLD_SIZE,
-  STAR_FORMATION_DENSITY_THRESHOLD
+  STAR_FORMATION_DENSITY_THRESHOLD,
+  UNIVERSE_TIME_SCALE
 } from '../utils/constants'
 
 export default function ParticleSystem() {
@@ -41,6 +42,7 @@ export default function ParticleSystem() {
     useBarnesHut,
     resetKey,
     setCurrentTime,
+    setUniverseAge,
     setParticleCounts,
     setStellarCounts
   } = useSimulationStore()
@@ -253,6 +255,11 @@ export default function ParticleSystem() {
     simulationTime.current += scaledDelta
     setCurrentTime(simulationTime.current)
 
+    // Calculate universe age in Gyr (gigayears)
+    // UNIVERSE_TIME_SCALE is in Myr (million years) per sim second
+    const universeAgeGyr = (simulationTime.current * UNIVERSE_TIME_SCALE) / 1000
+    setUniverseAge(universeAgeGyr)
+
     // Get current render targets
     const posReadRT = fbo.currentPositionIndex === 0 ? fbo.positionRT1 : fbo.positionRT2
     const posWriteRT = fbo.currentPositionIndex === 0 ? fbo.positionRT2 : fbo.positionRT1
@@ -406,141 +413,52 @@ export default function ParticleSystem() {
       // Update store
       setParticleCounts(darkMatter, gas, stars)
 
-      // ===== DIAGNOSTIC: Sample gas particles to check star formation conditions =====
-      if (gas > 0 && simulationTime.current % 5 < 0.1) { // Every 5 seconds
-        const sampleSize = Math.min(100, TEXTURE_SIZE)
-        const posBuffer = new Float32Array(sampleSize * sampleSize * 4)
-        const velBuffer = new Float32Array(sampleSize * sampleSize * 4)
-        const massBuffer = new Float32Array(MASS_GRID_TEXTURE_SIZE * MASS_GRID_TEXTURE_SIZE * 4)
-
-        try {
-          const ctx = gl.getContext() as WebGL2RenderingContext
-
-          // Read position texture (for particle type and position)
-          gl.setRenderTarget(finalPosRT)
-          ctx.readPixels(0, 0, sampleSize, sampleSize, ctx.RGBA, ctx.FLOAT, posBuffer)
-          gl.setRenderTarget(null)
-
-          // Read velocity texture (for temperature)
-          gl.setRenderTarget(finalVelRT)
-          ctx.readPixels(0, 0, sampleSize, sampleSize, ctx.RGBA, ctx.FLOAT, velBuffer)
-          gl.setRenderTarget(null)
-
-          // Read mass grid texture (for density)
-          gl.setRenderTarget(fbo.massRT2)
-          ctx.readPixels(0, 0, MASS_GRID_TEXTURE_SIZE, MASS_GRID_TEXTURE_SIZE, ctx.RGBA, ctx.FLOAT, massBuffer)
-          gl.setRenderTarget(null)
-
-          let gasCount = 0
-          let coldGas = 0 // temp 0.1-0.4
-          let warmGas = 0 // temp 0.4-0.7
-          let hotGas = 0  // temp > 0.7
-          let minTemp = 1.0
-          let maxTemp = 0.0
-          let tempSum = 0
-          let coldGasInDenseRegion = 0 // cold gas AND high density
-
-          // Get max density from mass grid
-          let maxDensity = 0
-          for (let i = 0; i < massBuffer.length; i += 4) {
-            maxDensity = Math.max(maxDensity, massBuffer[i + 3])
-          }
-
-          // Analyze gas particles
-          for (let i = 0; i < posBuffer.length; i += 4) {
-            const type = posBuffer[i + 3]
-            if (type > 0.5 && type < 1.5) { // Gas
-              gasCount++
-              const temp = velBuffer[i + 3]
-              tempSum += temp
-              minTemp = Math.min(minTemp, temp)
-              maxTemp = Math.max(maxTemp, temp)
-
-              const isCold = temp >= 0.1 && temp <= 0.4
-              if (isCold) coldGas++
-              else if (temp <= 0.7) warmGas++
-              else hotGas++
-
-              // Check if this gas is in dense region
-              // (This is approximate since we're sampling, but gives us an idea)
-              if (isCold) {
-                const x = posBuffer[i + 0]
-                const y = posBuffer[i + 1]
-                const z = posBuffer[i + 2]
-                // Convert to grid coords (simplified)
-                const gridSize = MASS_GRID_SIZE
-                const worldSize = MASS_GRID_WORLD_SIZE
-                const gridX = Math.floor(((x + worldSize/2) / worldSize) * gridSize)
-                const gridY = Math.floor(((y + worldSize/2) / worldSize) * gridSize)
-                const gridZ = Math.floor(((z + worldSize/2) / worldSize) * gridSize)
-
-                if (gridX >= 0 && gridX < gridSize && gridY >= 0 && gridY < gridSize && gridZ >= 0 && gridZ < gridSize) {
-                  // Convert 3D to 2D texture coords
-                  const layersPerRow = MASS_GRID_TEXTURE_SIZE / gridSize
-                  const layerX = gridZ % layersPerRow
-                  const layerY = Math.floor(gridZ / layersPerRow)
-                  const pixelX = layerX * gridSize + gridX
-                  const pixelY = layerY * gridSize + gridY
-                  const texIndex = (pixelY * MASS_GRID_TEXTURE_SIZE + pixelX) * 4
-
-                  if (texIndex < massBuffer.length) {
-                    const density = massBuffer[texIndex + 3]
-                    if (density > STAR_FORMATION_DENSITY_THRESHOLD) {
-                      coldGasInDenseRegion++
-                    }
-                  }
-                }
-              }
-            }
-          }
-
-          if (gasCount > 0) {
-            const avgTemp = tempSum / gasCount
-            console.log('🌡️ [Star Formation Diagnostic]', {
-              sampledGas: gasCount,
-              avgTemp: avgTemp.toFixed(3),
-              minTemp: minTemp.toFixed(3),
-              maxTemp: maxTemp.toFixed(3),
-              coldGas: `${coldGas} (${((coldGas/gasCount)*100).toFixed(1)}%) - FORMATION RANGE 0.1-0.4`,
-              warmGas: `${warmGas} (${((warmGas/gasCount)*100).toFixed(1)}%)`,
-              hotGas: `${hotGas} (${((hotGas/gasCount)*100).toFixed(1)}%)`,
-              maxDensity: maxDensity.toFixed(2) + ' (need >' + STAR_FORMATION_DENSITY_THRESHOLD + ')',
-              coldGasInDenseRegions: coldGasInDenseRegion + ' particles meet BOTH conditions!'
-            })
-          }
-        } catch (error) {
-          console.warn('Failed to diagnose star formation conditions:', error)
-        }
-      }
-
       // Count stellar subtypes by sampling particles (CPU readback)
       // Sample a small region to estimate distribution
       if (stars > 0) {
         // Sample a 100x100 region (10,000 particles) for statistics
         const sampleSize = Math.min(100, TEXTURE_SIZE)
-        const buffer = new Float32Array(sampleSize * sampleSize * 4)
+        const posBuffer = new Float32Array(sampleSize * sampleSize * 4)
+        const velBuffer = new Float32Array(sampleSize * sampleSize * 4)
 
         try {
+          const ctx = gl.getContext() as WebGL2RenderingContext
+
           // Read sample region from position texture
           gl.setRenderTarget(finalPosRT)
-          const ctx = gl.getContext() as WebGL2RenderingContext
-          ctx.readPixels(0, 0, sampleSize, sampleSize, ctx.RGBA, ctx.FLOAT, buffer)
+          ctx.readPixels(0, 0, sampleSize, sampleSize, ctx.RGBA, ctx.FLOAT, posBuffer)
+          gl.setRenderTarget(null)
+
+          // Read velocity texture (for ages)
+          gl.setRenderTarget(finalVelRT)
+          ctx.readPixels(0, 0, sampleSize, sampleSize, ctx.RGBA, ctx.FLOAT, velBuffer)
           gl.setRenderTarget(null)
 
           let mainSequence = 0
           let redGiant = 0
           let whiteDwarf = 0
           let totalStarsSampled = 0
+          let maxAge = 0
+          let minAge = 1.0
+          let ageSum = 0
 
-          // Count sampled stellar types
-          for (let i = 0; i < buffer.length; i += 4) {
-            const type = buffer[i + 3] // w component has particle type
+          // Count sampled stellar types and track ages
+          for (let i = 0; i < posBuffer.length; i += 4) {
+            const type = posBuffer[i + 3] // w component has particle type
+            const age = velBuffer[i + 3] // w component has age for stars
+
             if (type >= 2.0 && type < 2.5) {
               mainSequence++
               totalStarsSampled++
+              maxAge = Math.max(maxAge, age)
+              minAge = Math.min(minAge, age)
+              ageSum += age
             } else if (type >= 2.5 && type < 3.0) {
               redGiant++
               totalStarsSampled++
+              maxAge = Math.max(maxAge, age)
+              minAge = Math.min(minAge, age)
+              ageSum += age
             } else if (type >= 3.0 && type < 4.0) {
               whiteDwarf++
               totalStarsSampled++
@@ -555,6 +473,18 @@ export default function ParticleSystem() {
               Math.round(redGiant * ratio),
               Math.round(whiteDwarf * ratio)
             )
+
+            // Log star aging progress every 5 seconds
+            if (simulationTime.current % 10 < 0.1) {
+              const avgAge = ageSum / totalStarsSampled
+              console.log('⭐ [Stellar Aging Progress]', {
+                maxAge: maxAge.toFixed(3) + ' (need 0.7 for red giants)',
+                avgAge: avgAge.toFixed(3),
+                minAge: minAge.toFixed(3),
+                redGiantThreshold: '0.700',
+                progress: ((maxAge / 0.7) * 100).toFixed(1) + '%'
+              })
+            }
           } else {
             // No stars in sample, assume all main sequence
             setStellarCounts(stars, 0, 0)

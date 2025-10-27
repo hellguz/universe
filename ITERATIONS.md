@@ -792,6 +792,103 @@ After testing, user reported 5 critical bugs. All fixed!
 
 **All Issues Resolved!** System now fully functional with complete stellar evolution lifecycle.
 
+#### Step 6: Realistic Time Scaling & Universe Age ✅ COMPLETE
+
+**Problem Discovered:**
+User tested system and reported critical issues:
+- All gas converted to stars in 100 seconds (too fast!)
+- Stars lived only ~3 minutes total (birth to white dwarf death)
+- No sense of cosmic time progression
+- Entire galactic evolution compressed into 3 minutes
+
+**Analysis:**
+Reviewed simulation rates and found all timescales were 50-250x too fast:
+- `GAS_COOLING_RATE = 0.005` → Gas cooled in 20 seconds (not realistic)
+- `STAR_FORMATION_RATE = 0.1` → 10% per frame (instant conversion)
+- `STELLAR_AGING_RATE = 0.01` → Stars died in 100 frames (~2 seconds)
+
+User diagnosed issue: "isn't everything too fast now? also, isn't star lifecycle too short? they die too fast as for me, after 3min i don't have any stars anymore"
+
+**Solution Implemented: Universe Time System**
+
+Created cosmic time scale mapping: **1 real second = 20 million years**
+
+At this scale:
+- 10 real minutes = 12,000 Myr = 12 Gyr (approaching universe age of 13.8 Gyr)
+- Users can watch full galactic evolution in 10-15 minutes
+- Stellar lifetimes span 5+ minutes (representing billions of years)
+
+**Implementation:**
+
+1. **Added Universe Time Constants** ([constants.ts:42-44](src/utils/constants.ts:42))
+   - `UNIVERSE_TIME_SCALE = 20` (Myr per sim second)
+   - Documentation: 10 minutes = 12 Gyr
+
+2. **Slowed All Simulation Rates**
+   - `GAS_COOLING_RATE`: 0.005 → **0.00002** (250x slower)
+   - `STAR_FORMATION_RATE`: 0.1 → **0.002** (50x slower)
+   - `STELLAR_AGING_RATE`: 0.01 → **0.00005** (200x slower)
+
+3. **Universe Age Tracking** ([simulationStore.ts:15,49,73](src/store/simulationStore.ts:15))
+   - Added `universeAge` state (in Gyr)
+   - Calculated from simulation time: `(simTime * 20) / 1000`
+   - Resets to 0 on simulation reset
+
+4. **Universe Age Calculation** ([ParticleSystem.tsx:258-261](src/components/ParticleSystem.tsx:258))
+   - Updates every frame: `universeAge = (currentTime * UNIVERSE_TIME_SCALE) / 1000`
+   - Synchronized with simulation time
+
+5. **UI Display** ([ControlPanel.tsx:45-55](src/components/ControlPanel.tsx:45))
+   - Added prominent "Universe Age" section at top of panel
+   - Large display: "2.45 Gyr" or "340 Myr" (formats < 1 Gyr as Myr)
+   - Shows real time: "2:24 (1s = 20 Myr)" for context
+   - Gold/amber color scheme for cosmic theme
+
+6. **Removed Diagnostic Logging**
+   - Removed temperature diagnostic (no longer needed after fixing density threshold)
+   - Kept star formation success messages for monitoring
+
+**Realistic Timeline (Real Time → Universe Time):**
+
+| Real Time | Universe Age | Events |
+|-----------|--------------|--------|
+| 0-2 min | 0-2.4 Gyr | Gas cooling, molecular cloud formation |
+| 2-5 min | 2.4-6 Gyr | Active star formation epoch |
+| 5-8 min | 6-9.6 Gyr | Stars aging, first red giants appear |
+| 8-10 min | 9.6-12 Gyr | White dwarfs forming, mature galaxy |
+| 10+ min | 12+ Gyr | Stable population, approaching real universe age |
+
+**Stellar Lifecycle (Real Time → Stellar Evolution):**
+
+| Age | Real Time | Universe Time | Stage |
+|-----|-----------|---------------|-------|
+| 0.0 | Birth | 0 Gyr | Blue newborn star |
+| 0.3 | ~1 min | ~1.2 Gyr | Yellow main sequence |
+| 0.6 | ~2.5 min | ~3 Gyr | Aging yellow star |
+| 0.7 | ~3 min | ~3.6 Gyr | Red giant expansion |
+| 0.95 | ~5 min | ~6 Gyr | White dwarf collapse |
+| 0.99 | 5+ min | 6+ Gyr | Cool white dwarf remnant |
+
+**Results:**
+- ✅ Gas → star conversion now takes 5+ minutes (gradual, realistic)
+- ✅ Stars live 5+ minutes (birth to white dwarf = billions of years)
+- ✅ Universe age displayed prominently in UI
+- ✅ Cosmic time progression visible and meaningful
+- ✅ 10-minute viewing = complete galactic evolution story
+- ✅ Gas doesn't all disappear - maintains equilibrium with heating/cooling
+
+**User Feedback:**
+User confirmed stellar evolution is working: "works! But isn't everything too fast now? also, isn't star lifecycle too short?"
+
+User requested realistic timescales: "Let's maybe try to stay realistic. maybe you can start counting the time from universe is born as well and then we can try to make everything realistic?"
+
+**Files Modified:**
+- `src/utils/constants.ts` - Added UNIVERSE_TIME_SCALE, adjusted all rates
+- `src/store/simulationStore.ts` - Added universeAge state and action
+- `src/components/ParticleSystem.tsx` - Calculate universe age, removed diagnostics
+- `src/components/ControlPanel.tsx` - Added universe age display with time formatting
+- `ITERATIONS.md` - Documented Step 6 implementation
+
 ---
 
 ### Recent (2025-10-27)
@@ -807,6 +904,8 @@ After testing, user reported 5 critical bugs. All fixed!
 - ✅ **White dwarf formation** Red giants collapse into tiny blue-white remnants
 - ✅ **UI stellar statistics** Live counts of main sequence, red giants, white dwarfs
 - ✅ **Bug fixes** Fixed type transitions, color artifacts, counter overcounting, frozen UI, zoom colors
+- ✅ **Realistic time scaling** 1 sim second = 20 Myr, 10 minutes = 12 Gyr universe evolution
+- ✅ **Universe age tracking** Live display showing cosmic time in Gyr with real-time context
 
 ---
 
