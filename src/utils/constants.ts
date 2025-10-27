@@ -3,7 +3,7 @@
  */
 
 // Simulation settings
-export const TEXTURE_SIZE = 1024 // 1024x1024 = 1,048,576 particles (1.05M)
+export const TEXTURE_SIZE = 1500 // 1500x1500 = 2,250,000 particles (2.25M)
 export const PARTICLE_COUNT = TEXTURE_SIZE * TEXTURE_SIZE
 
 // Barnes-Hut Octree settings
@@ -13,9 +13,9 @@ export const MASS_GRID_WORLD_SIZE = 300.0 // World space size covered by mass gr
 export const BARNES_HUT_THETA = 0.5 // Opening angle criterion (0.5 = good balance)
 
 // Distance thresholds for hierarchical approximation
-export const NEAR_FIELD_DISTANCE = 20.0 // Use individual particles
-export const MID_FIELD_DISTANCE = 50.0 // Use small clusters (fine mipmap levels)
-export const FAR_FIELD_DISTANCE = 100.0 // Use large clusters (coarse mipmap levels)
+export const NEAR_FIELD_DISTANCE = 40.0 // Use individual particles
+export const MID_FIELD_DISTANCE = 200.0 // Use small clusters (fine mipmap levels)
+export const FAR_FIELD_DISTANCE = 500.0 // Use large clusters (coarse mipmap levels)
 
 // Performance settings - Fixed Sample Budget (fallback if Barnes-Hut disabled)
 export const SAMPLES_PER_PARTICLE = 128 // Fixed computational budget per particle
@@ -24,7 +24,7 @@ export const GRAVITY_CUTOFF_DISTANCE = 80.0 // Only check nearby particles
 // Physics constants (scaled for simulation)
 export const GRAVITATIONAL_CONSTANT = 0.0001 // Scaled G for visible effects
 export const TIMESTEP = 0.016 // ~60fps
-export const SOFTENING_LENGTH = 2.5 // Prevent singularities (larger for more particles)
+export const SOFTENING_LENGTH = 8 // Prevent singularities (larger for more particles)
 
 // Initial conditions
 export const INITIAL_SPREAD = 80 // Sphere radius for initial distribution (larger for more particles)
