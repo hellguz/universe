@@ -34,6 +34,8 @@ export default function ParticleSystem() {
   const pointsRef = useRef<THREE.Points>(null)
   const lastCountTime = useRef(0)
   const simulationTime = useRef(0)
+  const logFrameCounter = useRef(0) // Frame-based logging (works at any time scale)
+  const diagnosticData = useRef<any>({}) // Store data for unified status report
 
   const {
     isPlaying,
@@ -249,6 +251,9 @@ export default function ParticleSystem() {
   useFrame((_state, delta) => {
     if (!isPlaying) return
 
+    // Increment frame counter for time-scale-independent logging
+    logFrameCounter.current++
+
     const scaledDelta = delta * timeScale
 
     // Update uniforms
@@ -373,7 +378,7 @@ export default function ParticleSystem() {
     // Reset render target
     gl.setRenderTarget(null)
 
-    // Count particle types every 2 seconds using GPU reduction
+    // Count particle types every 30 seconds using GPU reduction
     // Skip counting during fast-forward (timeScale > 20) for better performance
     if (simulationTime.current - lastCountTime.current > 2.0 && timeScale < 20) {
       lastCountTime.current = simulationTime.current
@@ -392,26 +397,11 @@ export default function ParticleSystem() {
       const gasLoss = prevGas - gas
       const starGain = stars - prevStars
 
-      console.log('[Particle Counts] Time:', simulationTime.current.toFixed(1) + 's', {
-        darkMatter: darkMatter.toLocaleString() + ' (expected ~1,350,000)',
-        gas: gas.toLocaleString() + ' (expected ~787,500)',
-        stars: stars.toLocaleString() + ' (expected ~112,500)',
-        total: (darkMatter + gas + stars).toLocaleString() + ' (expected 2,250,000)',
-        gasLoss: gasLoss > 0 ? `-${gasLoss.toLocaleString()}` : '0',
-        starGain: starGain > 0 ? `+${starGain.toLocaleString()}` : '0'
-      })
-
-      // Check if gas is converting to stars
-      if (gasLoss > 100 && starGain > 0) {
-        console.log('✨ [Star Formation] Gas converted to stars:', {
-          gasConsumed: gasLoss.toLocaleString(),
-          starsFormed: starGain.toLocaleString(),
-          ratio: (gasLoss / Math.max(starGain, 1)).toFixed(2) + ':1'
-        })
-      }
-
       // Update store
       setParticleCounts(darkMatter, gas, stars)
+
+      // Store particle counts for unified report
+      diagnosticData.current.particleCounts = { darkMatter, gas, stars, gasLoss, starGain }
 
       // Count stellar subtypes by sampling particles (CPU readback)
       // Sample a small region to estimate distribution
@@ -465,29 +455,130 @@ export default function ParticleSystem() {
             }
           }
 
+          // Analyze gas temperature distribution (always, for diagnostics)
+          let coldGas = 0
+          let warmGas = 0
+          let hotGas = 0
+          let gasInSample = 0
+
+          for (let i = 0; i < posBuffer.length; i += 4) {
+            const type = posBuffer[i + 3]
+            if (type > 0.5 && type < 1.5) {
+              gasInSample++
+              const temp = velBuffer[i + 3]
+              if (temp >= 0.1 && temp <= 0.4) coldGas++
+              else if (temp <= 0.7) warmGas++
+              else hotGas++
+            }
+          }
+
           // Extrapolate from sample to total stars
           if (totalStarsSampled > 0) {
             const ratio = stars / totalStarsSampled
-            setStellarCounts(
-              Math.round(mainSequence * ratio),
-              Math.round(redGiant * ratio),
-              Math.round(whiteDwarf * ratio)
-            )
+            const mainSeqCount = Math.round(mainSequence * ratio)
+            const redGiantCount = Math.round(redGiant * ratio)
+            const whiteDwarfCount = Math.round(whiteDwarf * ratio)
 
-            // Log star aging progress every 5 seconds
-            if (simulationTime.current % 10 < 0.1) {
-              const avgAge = ageSum / totalStarsSampled
-              console.log('⭐ [Stellar Aging Progress]', {
-                maxAge: maxAge.toFixed(3) + ' (need 0.7 for red giants)',
-                avgAge: avgAge.toFixed(3),
-                minAge: minAge.toFixed(3),
-                redGiantThreshold: '0.700',
-                progress: ((maxAge / 0.7) * 100).toFixed(1) + '%'
-              })
+            setStellarCounts(mainSeqCount, redGiantCount, whiteDwarfCount)
+
+            // Store stellar data for unified report
+            const avgAge = ageSum / totalStarsSampled
+            diagnosticData.current.stellarStats = {
+              mainSequence: mainSeqCount,
+              redGiants: redGiantCount,
+              whiteDwarfs: whiteDwarfCount,
+              maxAge,
+              avgAge,
+              minAge
             }
           } else {
             // No stars in sample, assume all main sequence
             setStellarCounts(stars, 0, 0)
+            diagnosticData.current.stellarStats = {
+              mainSequence: stars,
+              redGiants: 0,
+              whiteDwarfs: 0,
+              maxAge: 0,
+              avgAge: 0,
+              minAge: 0
+            }
+          }
+
+          // Store gas data for unified report
+          diagnosticData.current.gasStats = {
+            coldGas: gasInSample > 0 ? Math.round((coldGas / gasInSample) * gas) : 0,
+            warmGas: gasInSample > 0 ? Math.round((warmGas / gasInSample) * gas) : 0,
+            hotGas: gasInSample > 0 ? Math.round((hotGas / gasInSample) * gas) : 0,
+            coldPercent: gasInSample > 0 ? (coldGas / gasInSample) * 100 : 0,
+            warmPercent: gasInSample > 0 ? (warmGas / gasInSample) * 100 : 0,
+            hotPercent: gasInSample > 0 ? (hotGas / gasInSample) * 100 : 0
+          }
+
+          // ===== UNIFIED STATUS REPORT (every 20 seconds = 1200 frames at 60fps) =====
+          if (logFrameCounter.current % 1200 === 0 && logFrameCounter.current > 0) {
+            const universeAgeGyr = (simulationTime.current * UNIVERSE_TIME_SCALE) / 1000
+            const pc = diagnosticData.current.particleCounts
+            const ss = diagnosticData.current.stellarStats
+            const gs = diagnosticData.current.gasStats
+
+            // Debug: Check if report is triggering
+            console.log(`[DEBUG] Report trigger at frame ${logFrameCounter.current}, data:`, { pc: !!pc, ss: !!ss, gs: !!gs })
+
+            // Safety check - make sure data is initialized
+            if (pc && ss && gs && pc.stars !== undefined) {
+              console.log('\n' + '='.repeat(80))
+            console.log('🌌 UNIVERSE STATUS REPORT')
+            console.log('='.repeat(80))
+            console.log(`⏱️  Time: ${Math.floor(simulationTime.current / 60)}:${Math.floor(simulationTime.current % 60).toString().padStart(2, '0')} real | ${universeAgeGyr.toFixed(2)} Gyr universe age`)
+            console.log(`📊 Scale: 1 sim second = ${UNIVERSE_TIME_SCALE} Myr | 10 min = 13.8 Gyr`)
+            console.log('')
+            console.log('━━━ PARTICLE COUNTS ━━━')
+            console.log(`⬤ Dark Matter:  ${pc.darkMatter.toLocaleString().padStart(12)} (60% - gravitational backbone)`)
+            console.log(`⬤ Gas:          ${pc.gas.toLocaleString().padStart(12)} (${((pc.gas / PARTICLE_COUNT) * 100).toFixed(1)}% remaining)`)
+            console.log(`⬤ Stars Total:  ${pc.stars.toLocaleString().padStart(12)} (${((pc.stars / PARTICLE_COUNT) * 100).toFixed(1)}% formed)`)
+            if (pc.gasLoss > 0 || pc.starGain > 0) {
+              console.log(`   └─ Formation: -${pc.gasLoss.toLocaleString()} gas → +${pc.starGain.toLocaleString()} stars`)
+            }
+            console.log('')
+            console.log('━━━ GAS ANALYSIS ━━━')
+            if (pc.gas > 0) {
+              console.log(`🌡️  Cold (0.1-0.4):  ${gs.coldGas.toLocaleString().padStart(12)} (${gs.coldPercent.toFixed(1)}%) ← STAR FORMATION RANGE`)
+              console.log(`🌡️  Warm (0.4-0.7):  ${gs.warmGas.toLocaleString().padStart(12)} (${gs.warmPercent.toFixed(1)}%)`)
+              console.log(`🌡️  Hot  (0.7+):     ${gs.hotGas.toLocaleString().padStart(12)} (${gs.hotPercent.toFixed(1)}%)`)
+              if (gs.coldPercent < 10 && pc.gas > 1000) {
+                console.log(`⚠️  Warning: Low cold gas - star formation may slow down`)
+              }
+            } else {
+              console.log(`❌ No gas remaining - star formation has ended`)
+            }
+            console.log('')
+            console.log('━━━ STELLAR EVOLUTION ━━━')
+            console.log(`⚬ Main Sequence:  ${ss.mainSequence.toLocaleString().padStart(12)} (${((ss.mainSequence / pc.stars) * 100).toFixed(1)}%) - Blue/Yellow stars`)
+            console.log(`⚬ Red Giants:     ${ss.redGiants.toLocaleString().padStart(12)} (${((ss.redGiants / pc.stars) * 100).toFixed(1)}%) - Evolved, swollen`)
+            console.log(`⚬ White Dwarfs:   ${ss.whiteDwarfs.toLocaleString().padStart(12)} (${((ss.whiteDwarfs / pc.stars) * 100).toFixed(1)}%) - Compact remnants`)
+            console.log('')
+            console.log('━━━ STELLAR AGING ━━━')
+            console.log(`📈 Max Age:  ${ss.maxAge.toFixed(4)} ${ss.maxAge < 0.7 ? `(${((ss.maxAge / 0.7) * 100).toFixed(1)}% to red giant)` : '(RED GIANT!)'}`)
+            console.log(`📊 Avg Age:  ${ss.avgAge.toFixed(4)}`)
+            console.log(`📉 Min Age:  ${ss.minAge.toFixed(4)}`)
+            console.log(`🎯 Thresholds: 0.700 → Red Giant | 0.950 → White Dwarf`)
+            console.log('')
+            console.log('━━━ EXPECTED MILESTONES ━━━')
+            if (universeAgeGyr < 1.4) {
+              console.log(`⏳ Upcoming: First stars at 0.7-1.4 Gyr`)
+            } else if (universeAgeGyr < 4.1) {
+              console.log(`🌟 Active: Cosmic noon (peak star formation)`)
+            } else if (universeAgeGyr < 10) {
+              console.log(`⏳ Upcoming: First red giants at ~10 Gyr`)
+            } else if (universeAgeGyr < 11) {
+              console.log(`🔴 Active: Red giant formation phase`)
+            } else if (universeAgeGyr < 13.8) {
+              console.log(`⚪ Active: White dwarf formation phase`)
+            } else {
+              console.log(`🎯 Reached: Present day (13.8 Gyr)`)
+            }
+              console.log('='.repeat(80) + '\n')
+            }
           }
         } catch (error) {
           // ReadPixels failed, fall back to default
@@ -496,6 +587,8 @@ export default function ParticleSystem() {
         }
       } else {
         setStellarCounts(0, 0, 0)
+        diagnosticData.current.stellarStats = { mainSequence: 0, redGiants: 0, whiteDwarfs: 0, maxAge: 0, avgAge: 0, minAge: 0 }
+        diagnosticData.current.gasStats = { coldGas: 0, warmGas: 0, hotGas: 0, coldPercent: 0, warmPercent: 0, hotPercent: 0 }
       }
     }
   })

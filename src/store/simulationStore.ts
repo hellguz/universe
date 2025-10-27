@@ -51,13 +51,13 @@ export const useSimulationStore = create<SimulationState>((set) => ({
   useBarnesHut: true, // Start with Barnes-Hut enabled
   resetKey: 0,
 
-  // Initial particle counts (approximate from constants)
-  darkMatterCount: Math.floor(PARTICLE_COUNT * 0.60),
-  gasCount: Math.floor(PARTICLE_COUNT * 0.35),
-  starCount: Math.floor(PARTICLE_COUNT * 0.05),
+  // Initial particle counts - Scientific: Universe starts with NO STARS
+  darkMatterCount: Math.floor(PARTICLE_COUNT * 0.60), // 60% dark matter
+  gasCount: Math.floor(PARTICLE_COUNT * 0.40), // 40% gas (primordial)
+  starCount: 0, // 0% stars - they form from gas over time!
 
   // Initial stellar evolution counts
-  mainSequenceCount: Math.floor(PARTICLE_COUNT * 0.05), // All stars start as main sequence
+  mainSequenceCount: 0, // No stars at universe start
   redGiantCount: 0,
   whiteDwarfCount: 0,
 
@@ -102,11 +102,11 @@ export const useSimulationStore = create<SimulationState>((set) => ({
     currentTime: 0,
     universeAge: 0,
     resetKey: state.resetKey + 1,
-    // Reset counts to initial values
+    // Reset counts to initial values - Scientific initial conditions
     darkMatterCount: Math.floor(PARTICLE_COUNT * 0.60),
-    gasCount: Math.floor(PARTICLE_COUNT * 0.35),
-    starCount: Math.floor(PARTICLE_COUNT * 0.05),
-    mainSequenceCount: Math.floor(PARTICLE_COUNT * 0.05),
+    gasCount: Math.floor(PARTICLE_COUNT * 0.40),
+    starCount: 0,
+    mainSequenceCount: 0,
     redGiantCount: 0,
     whiteDwarfCount: 0
   }))

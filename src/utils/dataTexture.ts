@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { TEXTURE_SIZE, INITIAL_SPREAD, INITIAL_VELOCITY_SPREAD } from './constants'
+import { TEXTURE_SIZE, INITIAL_SPREAD, INITIAL_VELOCITY_SPREAD, INITIAL_ROTATION_SPEED } from './constants'
 
 /**
  * Creates a Float32 data texture for FBO particle simulation
@@ -32,9 +32,10 @@ export function createPositionTexture(): THREE.DataTexture {
   const size = TEXTURE_SIZE
   const data = new Float32Array(size * size * 4)
 
-  // Calculate type distribution thresholds
-  const darkMatterThreshold = 0.60
-  const gasThreshold = 0.60 + 0.35 // 0.95
+  // Calculate type distribution thresholds - Scientific initial conditions
+  // Universe starts with NO STARS (they form from gas over time)
+  const darkMatterThreshold = 0.60 // 60% dark matter
+  const gasThreshold = 1.00 // 40% gas, 0% stars initially
 
   for (let i = 0; i < size * size; i++) {
     const i4 = i * 4
@@ -45,10 +46,9 @@ export function createPositionTexture(): THREE.DataTexture {
 
     if (rand < darkMatterThreshold) {
       particleType = 0.0 // Dark Matter (60%)
-    } else if (rand < gasThreshold) {
-      particleType = 1.0 // Gas (35%)
     } else {
-      particleType = 2.0 // Stars (5%)
+      particleType = 1.0 // Gas (40%) - all remaining particles are gas
+      // NO STARS AT START - universe begins with only gas + dark matter!
     }
 
     // Disk galaxy distribution
@@ -117,9 +117,9 @@ export function createVelocityTexture(positionTexture: THREE.DataTexture): THREE
     let temperature = 0.5
 
     if (particleType > 0.5 && r > 0.01) {
-      // Gas and stars: apply rotational velocity
+      // Gas particles: apply rotational velocity from angular momentum
       // Flat rotation curve (typical of spiral galaxies due to dark matter)
-      const rotationSpeed = 0.15 // Adjusted for visible rotation
+      const rotationSpeed = INITIAL_ROTATION_SPEED // Base rotation from constants
 
       // Circular velocity perpendicular to radius in x-z plane
       const angle = Math.atan2(z, x)
@@ -130,15 +130,10 @@ export function createVelocityTexture(positionTexture: THREE.DataTexture): THREE
       data[i4 + 1] = (Math.random() - 0.5) * INITIAL_VELOCITY_SPREAD * 0.1 // vy (minimal vertical motion)
       data[i4 + 2] = vz + (Math.random() - 0.5) * INITIAL_VELOCITY_SPREAD * 0.3 // vz with turbulence
 
-      // Temperature varies with radius and type
-      if (particleType > 1.5) {
-        // Stars: start as newborns with age 0.0
-        temperature = 0.0 // Age 0.0 (newborn blue stars)
-      } else {
-        // Gas: cooler in outer regions, warmer near center
-        const radialFactor = Math.max(0, 1 - r / (INITIAL_SPREAD * 0.5))
-        temperature = 0.3 + radialFactor * 0.4 + Math.random() * 0.2 // 0.3-0.9
-      }
+      // Gas temperature: Primordial gas starts warm (cools rapidly to formation range)
+      // Starting closer to formation range (0.1-0.4) for faster star formation
+      temperature = 0.5 + Math.random() * 0.2 // 0.5-0.7 (warm, cools in ~5 seconds)
+      // Note: No stars exist yet, so no age initialization needed
     } else {
       // Dark matter halo: small random velocities
       data[i4 + 0] = (Math.random() - 0.5) * INITIAL_VELOCITY_SPREAD * 0.5 // vx
