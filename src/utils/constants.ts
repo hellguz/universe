@@ -13,9 +13,9 @@ export const MASS_GRID_WORLD_SIZE = 300.0 // World space size covered by mass gr
 export const BARNES_HUT_THETA = 0.5 // Opening angle criterion (0.5 = good balance)
 
 // Distance thresholds for hierarchical approximation
-export const NEAR_FIELD_DISTANCE = 40.0 // Use individual particles
+export const NEAR_FIELD_DISTANCE = 60.0 // Use individual particles
 export const MID_FIELD_DISTANCE = 200.0 // Use small clusters (fine mipmap levels)
-export const FAR_FIELD_DISTANCE = 500.0 // Use large clusters (coarse mipmap levels)
+export const FAR_FIELD_DISTANCE = 600.0 // Use large clusters (coarse mipmap levels)
 
 // Performance settings - Fixed Sample Budget (fallback if Barnes-Hut disabled)
 export const SAMPLES_PER_PARTICLE = 128 // Fixed computational budget per particle
@@ -27,9 +27,9 @@ export const TIMESTEP = 0.016 // ~60fps
 export const SOFTENING_LENGTH = 8 // Prevent singularities (larger for more particles)
 
 // Initial conditions
-export const INITIAL_SPREAD = 80 // Sphere radius for initial distribution (larger for more particles)
-export const INITIAL_VELOCITY_SPREAD = 0.08 // Random velocity magnitude (reduced for stability)
-export const INITIAL_ROTATION_SPEED = 0.15 // Base rotation speed for galaxy (angular momentum conservation)
+export const INITIAL_SPREAD = 90 // Sphere radius for initial distribution (larger for more particles)
+export const INITIAL_VELOCITY_SPREAD = 0.05 // Random velocity magnitude (reduced for stability)
+export const INITIAL_ROTATION_SPEED = 0.08 // Base rotation speed for galaxy (angular momentum conservation)
 
 // Rendering - optimized for high particle count
 export const PARTICLE_SIZE = 0.4
@@ -48,7 +48,7 @@ export const UNIVERSE_TIME_SCALE = 23 // 1 sim second = 23 million years (Myr)
 // Camera
 export const CAMERA_POSITION: [number, number, number] = [0, 50, 100]
 export const CAMERA_FOV = 75
-export const CAMERA_NEAR = 0.1
+export const CAMERA_NEAR = 0.01
 export const CAMERA_FAR = 10000
 
 // Star Formation & Evolution - Scientific timescales
