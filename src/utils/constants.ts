@@ -44,3 +44,9 @@ export const CAMERA_POSITION: [number, number, number] = [0, 50, 100]
 export const CAMERA_FOV = 75
 export const CAMERA_NEAR = 0.1
 export const CAMERA_FAR = 10000
+
+// Star Formation & Evolution
+export const STAR_FORMATION_DENSITY_THRESHOLD = 2.5 // Mass units per cell for star formation (requires local clustering)
+export const STAR_FORMATION_TEMP_MIN = 0.3 // Minimum temperature for star formation (not too cold)
+export const STAR_FORMATION_TEMP_MAX = 0.8 // Maximum temperature for star formation (not too hot)
+export const STAR_FORMATION_RATE = 0.02 // Probability per frame (2% chance when conditions met - gradual formation)

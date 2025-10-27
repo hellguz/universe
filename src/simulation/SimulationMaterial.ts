@@ -56,7 +56,8 @@ export function createPositionMaterial(
     uniforms: {
       positionTexture: { value: positionTexture },
       velocityTexture: { value: velocityTexture },
-      delta: { value: 0 }
+      delta: { value: 0 },
+      worldSize: { value: MASS_GRID_WORLD_SIZE }
     },
     vertexShader: simulationVertexShader,
     fragmentShader: positionFragmentShader

@@ -9,6 +9,7 @@ import {
 } from '../utils/dataTexture'
 import { createVelocityMaterial, createPositionMaterial } from '../simulation/SimulationMaterial'
 import { createRenderMaterial } from '../simulation/RenderMaterial'
+import { createStateMaterial, createVelocityStateMaterial } from '../simulation/StateMaterial'
 import {
   createMassRenderTargets,
   createMassGridMaterial,
@@ -19,6 +20,8 @@ import { TEXTURE_SIZE, PARTICLE_COUNT } from '../utils/constants'
 export default function ParticleSystem() {
   const { gl } = useThree()
   const pointsRef = useRef<THREE.Points>(null)
+  const lastCountTime = useRef(0)
+  const simulationTime = useRef(0)
 
   const {
     isPlaying,
@@ -26,7 +29,8 @@ export default function ParticleSystem() {
     gravitationalConstant,
     useBarnesHut,
     resetKey,
-    setCurrentTime
+    setCurrentTime,
+    setParticleCounts
   } = useSimulationStore()
 
   // Initialize FBO textures and render targets
@@ -116,12 +120,20 @@ export default function ParticleSystem() {
     }
   }, [gl, resetKey]) // Reinitialize particles when resetKey changes
 
+  // Reset simulation time when resetKey changes
+  useEffect(() => {
+    simulationTime.current = 0
+    lastCountTime.current = 0
+  }, [resetKey])
+
   // Create simulation materials (for physics calculation)
   const {
     simulationScene,
     simulationCamera,
     velocityMaterial,
     positionMaterial,
+    stateMaterial,
+    velocityStateMaterial,
     massGridScene,
     massGridMaterial,
     massNormalizeMaterial,
@@ -142,6 +154,19 @@ export default function ParticleSystem() {
 
     // Material for position update (integrate velocity)
     const matPosition = createPositionMaterial(
+      fbo.positionRT1.texture,
+      fbo.velocityRT1.texture
+    )
+
+    // Material for state update (particle type transitions)
+    const matState = createStateMaterial(
+      fbo.positionRT1.texture,
+      fbo.velocityRT1.texture,
+      fbo.massRT2.texture
+    )
+
+    // Material for velocity state update (temperature changes)
+    const matVelocityState = createVelocityStateMaterial(
       fbo.positionRT1.texture,
       fbo.velocityRT1.texture
     )
@@ -173,6 +198,8 @@ export default function ParticleSystem() {
       simulationCamera: camera,
       velocityMaterial: matVelocity,
       positionMaterial: matPosition,
+      stateMaterial: matState,
+      velocityStateMaterial: matVelocityState,
       massGridScene: massScene,
       massGridMaterial: massGridMat,
       massNormalizeMaterial: massNormMat,
@@ -199,15 +226,14 @@ export default function ParticleSystem() {
   }, [fbo])
 
   // Simulation loop
-  let time = 0
   useFrame((_state, delta) => {
     if (!isPlaying) return
 
     const scaledDelta = delta * timeScale
 
     // Update uniforms
-    time += scaledDelta
-    setCurrentTime(time)
+    simulationTime.current += scaledDelta
+    setCurrentTime(simulationTime.current)
 
     // Get current render targets
     const posReadRT = fbo.currentPositionIndex === 0 ? fbo.positionRT1 : fbo.positionRT2
@@ -252,7 +278,7 @@ export default function ParticleSystem() {
       velocityMaterial.uniforms.massTexture.value = fbo.massRT2.texture
     }
 
-    velocityMaterial.uniforms.time.value = time
+    velocityMaterial.uniforms.time.value = simulationTime.current
     velocityMaterial.uniforms.delta.value = scaledDelta
     velocityMaterial.uniforms.G.value = gravitationalConstant
 
@@ -275,12 +301,81 @@ export default function ParticleSystem() {
     // Swap position buffers
     fbo.currentPositionIndex = 1 - fbo.currentPositionIndex
 
+    // PASS 3: Update particle states (type transitions: gas → star)
+    // Only run state updates if Barnes-Hut is enabled (needs mass texture for density)
+    if (useBarnesHut) {
+      const stateReadRT = fbo.currentPositionIndex === 0 ? fbo.positionRT1 : fbo.positionRT2
+      const stateWriteRT = fbo.currentPositionIndex === 0 ? fbo.positionRT2 : fbo.positionRT1
+
+      stateMaterial.uniforms.positionTexture.value = stateReadRT.texture
+      stateMaterial.uniforms.velocityTexture.value = velWriteRT.texture
+      stateMaterial.uniforms.massTexture.value = fbo.massRT2.texture
+      stateMaterial.uniforms.time.value = simulationTime.current
+      stateMaterial.uniforms.delta.value = scaledDelta
+
+      mesh.material = stateMaterial
+      gl.setRenderTarget(stateWriteRT)
+      gl.render(simulationScene, simulationCamera)
+
+      // Swap position buffers
+      fbo.currentPositionIndex = 1 - fbo.currentPositionIndex
+
+      // PASS 3b: Update velocity state (temperature changes for newly formed stars)
+      const velStateReadRT = fbo.currentVelocityIndex === 0 ? fbo.velocityRT1 : fbo.velocityRT2
+      const velStateWriteRT = fbo.currentVelocityIndex === 0 ? fbo.velocityRT2 : fbo.velocityRT1
+      const finalPosRT = fbo.currentPositionIndex === 0 ? fbo.positionRT1 : fbo.positionRT2
+
+      velocityStateMaterial.uniforms.positionTexture.value = finalPosRT.texture
+      velocityStateMaterial.uniforms.velocityTexture.value = velStateReadRT.texture
+      velocityStateMaterial.uniforms.time.value = simulationTime.current
+
+      mesh.material = velocityStateMaterial
+      gl.setRenderTarget(velStateWriteRT)
+      gl.render(simulationScene, simulationCamera)
+
+      // Swap velocity buffers
+      fbo.currentVelocityIndex = 1 - fbo.currentVelocityIndex
+    }
+
     // Update render material to use latest position and velocity textures
-    renderMaterial.uniforms.positionTexture.value = posWriteRT.texture
-    renderMaterial.uniforms.velocityTexture.value = velWriteRT.texture
+    const finalPosRT = fbo.currentPositionIndex === 0 ? fbo.positionRT1 : fbo.positionRT2
+    const finalVelRT = fbo.currentVelocityIndex === 0 ? fbo.velocityRT1 : fbo.velocityRT2
+    renderMaterial.uniforms.positionTexture.value = finalPosRT.texture
+    renderMaterial.uniforms.velocityTexture.value = finalVelRT.texture
 
     // Reset render target
     gl.setRenderTarget(null)
+
+    // Count particle types every 0.5 seconds
+    if (simulationTime.current - lastCountTime.current > 0.5) {
+      lastCountTime.current = simulationTime.current
+
+      // Read position texture from GPU
+      const buffer = new Float32Array(TEXTURE_SIZE * TEXTURE_SIZE * 4)
+      gl.setRenderTarget(finalPosRT)
+      gl.readRenderTargetPixels(finalPosRT, 0, 0, TEXTURE_SIZE, TEXTURE_SIZE, buffer)
+      gl.setRenderTarget(null)
+
+      // Count particle types
+      let darkMatter = 0
+      let gas = 0
+      let stars = 0
+
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const particleType = buffer[i * 4 + 3] // w component = particle type
+
+        if (particleType < 0.5) {
+          darkMatter++
+        } else if (particleType < 1.5) {
+          gas++
+        } else {
+          stars++
+        }
+      }
+
+      // Update store
+      setParticleCounts(darkMatter, gas, stars)
+    }
   })
 
   // Cleanup
@@ -296,10 +391,12 @@ export default function ParticleSystem() {
       renderMaterial.dispose()
       velocityMaterial.dispose()
       positionMaterial.dispose()
+      stateMaterial.dispose()
+      velocityStateMaterial.dispose()
       massGridMaterial.dispose()
       massNormalizeMaterial.dispose()
     }
-  }, [fbo, particleGeometry, renderMaterial, velocityMaterial, positionMaterial, massGridMaterial, massNormalizeMaterial])
+  }, [fbo, particleGeometry, renderMaterial, velocityMaterial, positionMaterial, stateMaterial, velocityStateMaterial, massGridMaterial, massNormalizeMaterial])
 
   return (
     <points ref={pointsRef} geometry={particleGeometry} material={renderMaterial} />

@@ -16,6 +16,11 @@ interface SimulationState {
   useBarnesHut: boolean // Toggle between Barnes-Hut and old system
   resetKey: number // Increment to trigger particle reinitialization
 
+  // Particle type counts
+  darkMatterCount: number
+  gasCount: number
+  starCount: number
+
   // Actions
   togglePlay: () => void
   setTimeScale: (scale: number) => void
@@ -24,6 +29,7 @@ interface SimulationState {
   setFps: (fps: number) => void
   toggleBarnesHut: () => void
   reset: () => void
+  setParticleCounts: (darkMatter: number, gas: number, stars: number) => void
 }
 
 export const useSimulationStore = create<SimulationState>((set) => ({
@@ -37,6 +43,11 @@ export const useSimulationStore = create<SimulationState>((set) => ({
   useBarnesHut: true, // Start with Barnes-Hut enabled
   resetKey: 0,
 
+  // Initial particle counts (approximate from constants)
+  darkMatterCount: Math.floor(PARTICLE_COUNT * 0.60),
+  gasCount: Math.floor(PARTICLE_COUNT * 0.35),
+  starCount: Math.floor(PARTICLE_COUNT * 0.05),
+
   // Actions
   togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
 
@@ -47,6 +58,12 @@ export const useSimulationStore = create<SimulationState>((set) => ({
   setCurrentTime: (time: number) => set({ currentTime: time }),
 
   setFps: (fps: number) => set({ fps }),
+
+  setParticleCounts: (darkMatter: number, gas: number, stars: number) => set({
+    darkMatterCount: darkMatter,
+    gasCount: gas,
+    starCount: stars
+  }),
 
   toggleBarnesHut: () => set((state) => ({
     useBarnesHut: !state.useBarnesHut,
@@ -61,6 +78,10 @@ export const useSimulationStore = create<SimulationState>((set) => ({
     timeScale: DEFAULT_TIME_SCALE,
     gravitationalConstant: GRAVITATIONAL_CONSTANT,
     currentTime: 0,
-    resetKey: state.resetKey + 1
+    resetKey: state.resetKey + 1,
+    // Reset counts to initial values
+    darkMatterCount: Math.floor(PARTICLE_COUNT * 0.60),
+    gasCount: Math.floor(PARTICLE_COUNT * 0.35),
+    starCount: Math.floor(PARTICLE_COUNT * 0.05)
   }))
 }))

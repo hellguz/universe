@@ -7,6 +7,9 @@ export default function ControlPanel() {
     timeScale,
     gravitationalConstant,
     useBarnesHut,
+    darkMatterCount,
+    gasCount,
+    starCount,
     togglePlay,
     setTimeScale,
     setGravitationalConstant,
@@ -17,6 +20,24 @@ export default function ControlPanel() {
   return (
     <div className="control-panel">
       <h3>Universe Simulator</h3>
+
+      <div className="control-group">
+        <label>Particle Counts</label>
+        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginTop: '5px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+            <span style={{ color: 'rgba(64, 32, 96, 1)' }}>⬤ Dark Matter:</span>
+            <span>{darkMatterCount.toLocaleString()}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+            <span style={{ color: 'rgba(51, 153, 255, 1)' }}>⬤ Gas:</span>
+            <span>{gasCount.toLocaleString()}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: 'rgba(255, 200, 100, 1)' }}>⬤ Stars:</span>
+            <span>{starCount.toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
 
       <div className="control-group">
         <label>Time Controls</label>

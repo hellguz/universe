@@ -3,6 +3,7 @@
 uniform sampler2D positionTexture;
 uniform sampler2D velocityTexture;
 uniform float delta;
+uniform float worldSize; // World boundary size (300)
 
 varying vec2 vUv;
 
@@ -17,6 +18,17 @@ void main() {
 
     // Integrate position
     position += velocity * delta;
+
+    // Boundary wrapping to keep particles in simulation volume
+    // Wrap around world boundaries (periodic boundary conditions)
+    float halfWorld = worldSize * 0.5;
+
+    if (position.x > halfWorld) position.x -= worldSize;
+    if (position.x < -halfWorld) position.x += worldSize;
+    if (position.y > halfWorld) position.y -= worldSize;
+    if (position.y < -halfWorld) position.y += worldSize;
+    if (position.z > halfWorld) position.z -= worldSize;
+    if (position.z < -halfWorld) position.z += worldSize;
 
     // Output updated position (preserve particle type)
     gl_FragColor = vec4(position, particleType);
