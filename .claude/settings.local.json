@@ -6,7 +6,10 @@
       "Bash(yarn add:*)",
       "Bash(yarn dev)",
       "Bash(yarn remove:*)",
-      "Bash(yarn type-check)"
+      "Bash(yarn type-check)",
+      "Bash(git remote get-url:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
