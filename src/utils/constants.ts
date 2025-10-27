@@ -3,7 +3,7 @@
  */
 
 // Simulation settings
-export const TEXTURE_SIZE = 1500 // 1500x1500 = 2,250,000 particles (2.25M)
+export const TEXTURE_SIZE = 1700 // 1700x1700 = 2.89 million particles
 export const PARTICLE_COUNT = TEXTURE_SIZE * TEXTURE_SIZE
 
 // Barnes-Hut Octree settings
@@ -27,7 +27,7 @@ export const TIMESTEP = 0.016 // ~60fps
 export const SOFTENING_LENGTH = 8 // Prevent singularities (larger for more particles)
 
 // Initial conditions
-export const INITIAL_SPREAD = 90 // Sphere radius for initial distribution (larger for more particles)
+export const INITIAL_SPREAD = 70 // Sphere radius for initial distribution (larger for more particles)
 export const INITIAL_VELOCITY_SPREAD = 0.05 // Random velocity magnitude (reduced for stability)
 export const INITIAL_ROTATION_SPEED = 0.08 // Base rotation speed for galaxy (angular momentum conservation)
 
