@@ -9,18 +9,18 @@ uniform float isFirstPass; // 1.0 if reading from position texture, 0.0 if from 
 varying vec2 vUv;
 
 void main() {
-    // This pixel's UV maps to a 4x4 block in the input texture
-    // Calculate the top-left corner of the 4x4 block in input pixel coordinates
-    // outputPixel = floor(vUv * outputSize) where outputSize = inputSize/4
-    // inputPixelStart = outputPixel * 4
-    vec2 outputPixel = floor(vUv * (inputSize / 4.0));
-    vec2 blockOrigin = outputPixel * 4.0; // Start of 4x4 block in input pixel space
+    // Each output pixel processes exactly ONE 4x4 block from input
+    // Output size = ceil(inputSize / 4), so we map output pixels to input blocks
+
+    float outputSize = ceil(inputSize / 4.0);
+    vec2 outputPixel = floor(vUv * outputSize); // Which output pixel are we (0 to outputSize-1)
+    vec2 blockStart = outputPixel * 4.0; // Start of our 4x4 block in input pixel coordinates
 
     float darkMatterCount = 0.0;
     float gasCount = 0.0;
     float starCount = 0.0;
 
-    // Sample 4x4 block (16 pixels) - unrolled loop for WebGL compatibility
+    // Sample 4x4 block (16 pixels) - but only if they exist in input!
     float inputTexelSize = 1.0 / inputSize;
 
     // Manually unroll 4x4 loop for WebGL shader compilation
@@ -29,27 +29,32 @@ void main() {
         float x = mod(fi, 4.0);
         float y = floor(fi / 4.0);
 
-        vec2 sampleUV = (blockOrigin + vec2(x, y) + 0.5) * inputTexelSize;
-        vec4 texel = texture2D(inputTexture, sampleUV);
+        vec2 inputPixel = blockStart + vec2(x, y);
 
-        if (isFirstPass > 0.5) {
-            // First pass: reading from position texture
-            // texel.w contains particle type: 0.0=dark matter, 1.0=gas, 2.0=stars
-            float particleType = texel.w;
+        // Only sample if pixel exists in input (avoid out-of-bounds)
+        if (inputPixel.x < inputSize && inputPixel.y < inputSize) {
+            vec2 sampleUV = (inputPixel + 0.5) * inputTexelSize;
+            vec4 texel = texture2D(inputTexture, sampleUV);
 
-            if (particleType < 0.5) {
-                darkMatterCount += 1.0;
-            } else if (particleType < 1.5) {
-                gasCount += 1.0;
+            if (isFirstPass > 0.5) {
+                // First pass: reading from position texture
+                // texel.w contains particle type: 0.0=dark matter, 1.0=gas, 2.0=stars
+                float particleType = texel.w;
+
+                if (particleType < 0.5) {
+                    darkMatterCount += 1.0;
+                } else if (particleType < 1.5) {
+                    gasCount += 1.0;
+                } else {
+                    starCount += 1.0;
+                }
             } else {
-                starCount += 1.0;
+                // Subsequent passes: reading from reduction texture
+                // texel already contains counts from previous reduction
+                darkMatterCount += texel.r;
+                gasCount += texel.g;
+                starCount += texel.b;
             }
-        } else {
-            // Subsequent passes: reading from reduction texture
-            // texel already contains counts from previous reduction
-            darkMatterCount += texel.r;
-            gasCount += texel.g;
-            starCount += texel.b;
         }
     }
 

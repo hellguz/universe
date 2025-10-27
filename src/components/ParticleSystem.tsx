@@ -372,6 +372,30 @@ export default function ParticleSystem() {
         TEXTURE_SIZE
       )
 
+      // Debug logging for particle counts
+      const prevGas = useSimulationStore.getState().gasCount
+      const prevStars = useSimulationStore.getState().starCount
+      const gasLoss = prevGas - gas
+      const starGain = stars - prevStars
+
+      console.log('[Particle Counts] Time:', simulationTime.current.toFixed(1) + 's', {
+        darkMatter: darkMatter.toLocaleString() + ' (expected ~1,350,000)',
+        gas: gas.toLocaleString() + ' (expected ~787,500)',
+        stars: stars.toLocaleString() + ' (expected ~112,500)',
+        total: (darkMatter + gas + stars).toLocaleString() + ' (expected 2,250,000)',
+        gasLoss: gasLoss > 0 ? `-${gasLoss.toLocaleString()}` : '0',
+        starGain: starGain > 0 ? `+${starGain.toLocaleString()}` : '0'
+      })
+
+      // Check if gas is converting to stars
+      if (gasLoss > 100 && starGain > 0) {
+        console.log('✨ [Star Formation] Gas converted to stars:', {
+          gasConsumed: gasLoss.toLocaleString(),
+          starsFormed: starGain.toLocaleString(),
+          ratio: (gasLoss / Math.max(starGain, 1)).toFixed(2) + ':1'
+        })
+      }
+
       // Update store
       setParticleCounts(darkMatter, gas, stars)
 
