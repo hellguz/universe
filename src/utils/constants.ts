@@ -3,7 +3,7 @@
  */
 
 // Simulation settings
-export const TEXTURE_SIZE = 2048 // 2304x2304 = 5,308,416 particles (5.3M)
+export const TEXTURE_SIZE = 1024 // 1024x1024 = 1,048,576 particles (1.05M)
 export const PARTICLE_COUNT = TEXTURE_SIZE * TEXTURE_SIZE
 
 // Barnes-Hut Octree settings

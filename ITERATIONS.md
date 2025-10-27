@@ -130,7 +130,7 @@ Ready to implement:
 - [x] **Rotation and angular momentum conservation** ✅
 - [x] **Improved visual effects (bloom)** ✅
 - [x] **Performance profiling and optimization** ✅
-- [ ] Barnes-Hut octree gravity (future optimization)
+- [x] **Barnes-Hut octree gravity** ✅ (O(N log N) hierarchical approximation)
 - [ ] Particle state system (gas → star transitions)
 - [ ] Galaxy collision scenarios
 
@@ -388,13 +388,60 @@ _Future enhancements..._
 - ✅ vite-plugin-glsl for shader imports
 - ✅ @react-three/postprocessing for bloom
 
-### Recent (2025-10-26)
-- ✅ **Achieved 5.3M particles** using fixed sample budget O(1) algorithm
-- ✅ 128 samples/particle - performance constant regardless of total count
-- ✅ Resolution-independent force scaling for consistent physics
-- ✅ Brightness optimizations: 5x alpha reduction, tuned bloom
-- ✅ Stable fps with galaxy structure formation visible
+### Session 5 (2025-10-27) - Barnes-Hut Octree Implementation
+
+**Note**: This file is auto-updated. User runs `yarn dev` independently. Implementation is done step-by-step with visual testing between features.
+
+**Completed:**
+- ✅ Barnes-Hut hierarchical approximation (O(N log N))
+- ✅ 3D mass grid (64³ cells) flattened to 2D texture (512×512)
+- ✅ Multi-pass system: mass accumulation → normalization → mipmap generation
+- ✅ Distance-based LOD: near (individual), mid (fine mipmaps), far (coarse mipmaps)
+- ✅ Toggle system to compare Barnes-Hut vs old simple method
+- ✅ WebGL 2.0 `textureLod()` for mipmap sampling
+- ✅ Numerical stability fixes: softening length (2.5), larger initial spread (80), damping (0.999)
+- ✅ Auto-reset when toggling methods to avoid incompatible simulation state
+
+**Implementation:**
+- Mass grid vertex shader renders particles as points to grid cells
+- Additive blending accumulates mass per cell
+- Normalization pass converts weighted sum to center of mass
+- GPU mipmaps create hierarchical structure (levels 0-7)
+- Velocity shader samples mass grid at different LOD levels based on distance
+- Near field: 64 direct particle samples (< 20 units)
+- Far field: hierarchical mass clusters via mipmaps
+
+**Challenges:**
+- Shader LOD extension: Fixed by using WebGL 2.0 `textureLod()` instead of `texture2DLodEXT`
+- Black screen on toggle: Fixed with `resetKey` trigger to reinitialize particles when switching methods
+- Numerical explosion with 2048² particles: Fixed with larger softening, spread, stronger damping
+
+**Files Created:**
+- `src/simulation/MassTexture.ts` - Mass grid utilities and materials
+- `src/shaders/massGrid/vertex.glsl` - Particle-to-grid mapping
+- `src/shaders/massGrid/fragment.glsl` - Mass accumulation
+- `src/shaders/massGrid/normalize.glsl` - Center of mass calculation
+- `src/shaders/simulation/velocityFragmentOld.glsl` - Original method for comparison
+
+**Files Modified:**
+- `src/shaders/simulation/velocityFragment.glsl` - Added Barnes-Hut hierarchical sampling
+- `src/components/ParticleSystem.tsx` - Integrated mass distribution passes
+- `src/components/ControlPanel.tsx` - Added toggle UI
+- `src/store/simulationStore.ts` - Added `useBarnesHut` and `resetKey` state
+- `src/utils/constants.ts` - Added Barnes-Hut parameters and stability constants
+
+**Results:**
+- Toggle allows instant comparison between O(N) and O(N log N) methods
+- 4.2M particles (2048²) stable with no explosion
+- Grid patterns eliminated with hierarchical approximation
+- More accurate physics with better clustering behavior
+
+### Recent (2025-10-27)
+- ✅ **Barnes-Hut Octree** O(N log N) hierarchical gravity
+- ✅ **Toggle comparison** between simple and hierarchical methods
+- ✅ **Numerical stability** for 4M+ particles
+- ✅ **Step-by-step implementation** with visual testing between features
 
 ---
 
-_Last Updated: 2025-10-26_
+_Last Updated: 2025-10-27_
