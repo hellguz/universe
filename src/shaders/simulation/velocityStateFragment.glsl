@@ -64,6 +64,19 @@ void main() {
         // No reset needed - just age normally!
         tempOrAge = min(tempOrAge + agingRate * delta, 0.99);
     }
+    // ===== WHITE DWARF AGING =====
+    else if (particleType >= 3.0 && particleType < 4.0) {
+        // White dwarf (type 3.0): velocity.w stores cooling time
+        // Newly formed white dwarfs have age ~0.95 from red giant phase
+        // Reset to 0.0 to represent fresh, hot white dwarf that cools over time
+        if (tempOrAge > 0.9) {
+            // Newly formed white dwarf - reset to hot state
+            tempOrAge = 0.0; // 0.0 = hot blue-white, 1.0 = cool dim white dwarf
+        } else {
+            // White dwarfs cool slowly over time
+            tempOrAge = min(tempOrAge + agingRate * delta * 0.1, 0.99); // Cool 10x slower than stars age
+        }
+    }
     // ===== GAS COOLING & STELLAR FEEDBACK HEATING =====
     else if (particleType > 0.5 && particleType < 1.5) {
         // Gas: velocity.w stores TEMPERATURE (0.0 = cold, 1.0 = hot)

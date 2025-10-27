@@ -95,22 +95,36 @@ void main() {
 
     // ===== STELLAR EVOLUTION: MAIN SEQUENCE → RED GIANT =====
     // Check if this is a main sequence star that's old enough to become a red giant
-    if (particleType > 1.5 && particleType < 2.5) {
+    if (particleType >= 2.0 && particleType < 2.5) {
         // Main sequence star (type 2.0)
         // Check age (stored in velocity.w)
         float age = temperature; // Actually age for stars
 
-        // Red giant threshold: age > 0.7
-        if (age > 0.7) {
+        // Red giant threshold: age >= 0.7
+        if (age >= 0.7) {
             // Transition to red giant!
             particleType = 2.5; // Red giant type
         }
     }
 
+    // ===== STELLAR EVOLUTION: RED GIANT → WHITE DWARF =====
+    // Check if this is a red giant old enough to shed its outer layers
+    else if (particleType >= 2.5 && particleType < 3.0) {
+        // Red giant (type 2.5)
+        float age = temperature; // Actually age for stars
+
+        // White dwarf threshold: age >= 0.95 (very ancient)
+        if (age >= 0.95) {
+            // Shed outer layers and become white dwarf!
+            particleType = 3.0; // White dwarf (compact object)
+            // Note: Age will be reset to 0.0 in velocityStateFragment to represent fresh white dwarf
+        }
+    }
+
     // ===== FUTURE: MORE EVOLUTION =====
-    // TODO: Red Giant → White Dwarf transitions
     // TODO: Massive star → Supernova → Neutron Star/Black Hole
     // TODO: Supernova explosions with shockwaves
+    // TODO: White dwarf accretion and nova events
 
     // Output updated state
     gl_FragColor = vec4(position, particleType);

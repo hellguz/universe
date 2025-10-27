@@ -10,8 +10,11 @@ varying vec2 vUv;
 
 void main() {
     // This pixel's UV maps to a 4x4 block in the input texture
-    // Calculate the top-left corner of the 4x4 block
-    vec2 blockOrigin = vUv * (inputSize / 4.0);
+    // Calculate the top-left corner of the 4x4 block in input pixel coordinates
+    // outputPixel = floor(vUv * outputSize) where outputSize = inputSize/4
+    // inputPixelStart = outputPixel * 4
+    vec2 outputPixel = floor(vUv * (inputSize / 4.0));
+    vec2 blockOrigin = outputPixel * 4.0; // Start of 4x4 block in input pixel space
 
     float darkMatterCount = 0.0;
     float gasCount = 0.0;

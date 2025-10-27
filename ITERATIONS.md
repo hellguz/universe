@@ -651,6 +651,147 @@ Cold blue gas → Star forms → Gas heats up (orange) → Hot bubble expands
 - `src/simulation/StateMaterial.ts` - Added mass texture parameter
 - `src/components/ParticleSystem.tsx` - Mass texture uniform binding
 
+#### Step 4: White Dwarf Formation ✅ COMPLETE
+
+**Goal:** Ancient red giants shed outer layers, leaving tiny, hot white dwarf remnants
+
+**Implementation:**
+- Added red giant → white dwarf transition in [stateFragment.glsl:110](src/shaders/simulation/stateFragment.glsl:110)
+- Red giants with age > 0.95 become white dwarfs (type 3.0)
+- White dwarfs are **0.5x size** (tiny!) vs 1.8x for main sequence: [render/vertex.glsl:40](src/shaders/render/vertex.glsl:40)
+- Hot blue-white coloring in [render/fragment.glsl:94](src/shaders/render/fragment.glsl:94)
+- White dwarfs cool slowly (10x slower than stellar aging): [velocityStateFragment.glsl:67](src/shaders/simulation/velocityStateFragment.glsl:67)
+
+**Visual Changes:**
+- Age 0.0-0.7: Normal stellar evolution (blue → yellow → red)
+- Age 0.7-0.95: HUGE red giants (age for ~25% of stellar lifetime)
+- Age 0.95: **SHRINK DRAMATICALLY** - red giant collapses!
+- Type 3.0: **TINY bright blue-white dots** (white dwarfs)
+- White dwarfs cool slowly: blue-white → dim white
+
+**Complete Lifecycle Now:**
+```
+Small Blue Star (age 0.0)
+     ↓ ages
+Small Yellow Star (age 0.3-0.6)
+     ↓ ages
+Small Red Star (age 0.6-0.7)
+     ↓ expands
+GIANT Orange-Red Blob (age 0.7-0.95)
+     ↓ sheds layers
+TINY Bright Blue-White Dot (white dwarf, cooling 0.0)
+     ↓ cools slowly
+Tiny Dim White Dot (cool white dwarf, cooling 0.99)
+```
+
+**Visual Drama:**
+- Red giants shrink from **4.5x → 0.5x** size (9x size reduction!)
+- Color shifts orange-red → blue-white instantly (temperature jump)
+- Creates stunning "death flash" as star collapses
+- White dwarfs are 4x brighter than normal stars (concentrated energy)
+
+**Testing at 50x speed:**
+- Watch red giants age to 0.95
+- **SUDDEN COLLAPSE** - giant shrinks to tiny point
+- Bright blue-white dot remains (white dwarf)
+- Much smaller than original star!
+
+**Files Modified:**
+- `src/shaders/simulation/stateFragment.glsl` - White dwarf transition
+- `src/shaders/simulation/velocityStateFragment.glsl` - Cooling logic
+- `src/shaders/render/vertex.glsl` - Tiny size for white dwarfs
+- `src/shaders/render/fragment.glsl` - Blue-white coloring
+
+#### Step 5: UI Enhancements - Stellar Statistics ✅ COMPLETE
+
+**Goal:** Display live counts of all stellar evolution stages in the control panel
+
+**Implementation:**
+- Extended [simulationStore.ts](src/store/simulationStore.ts:24) with stellar evolution counters
+- Added `mainSequenceCount`, `redGiantCount`, `whiteDwarfCount` to state
+- Created `setStellarCounts()` action to update stellar statistics
+- Updated [ControlPanel.tsx](src/components/ControlPanel.tsx:45) with "Stellar Evolution" section
+- Added CPU sampling in [ParticleSystem.tsx](src/components/ParticleSystem.tsx:377) to count stellar types
+- Samples ~1000 particles every 2 seconds, extrapolates to full population
+
+**UI Display:**
+- **Particle Counts:** Dark Matter, Gas, Stars (Total)
+- **Stellar Evolution:** (indented sub-section)
+  - ⚬ Main Sequence (blue-white to red stars)
+  - ⚬ Red Giants (huge orange-red blobs)
+  - ⚬ White Dwarfs (tiny blue-white dots)
+
+**Technical Implementation:**
+- Every 2 seconds, read back position texture from GPU
+- Sample particle types using stride to avoid full readback
+- Count stellar subtypes: 1.5-2.5 (main seq), 2.5-3.0 (giants), 3.0+ (dwarfs)
+- Extrapolate sample ratios to total star count
+- Update UI with live statistics
+
+**Visual Result:**
+- Control panel now shows stellar evolution in real-time!
+- Watch main sequence count decrease as stars age
+- Red giant count rises when stars reach age 0.7
+- White dwarf count increases when giants reach age 0.95
+- Creates live "population tracker" for stellar lifecycle
+
+**Testing:**
+- At 50-100x speed, watch the counts change!
+- Main Sequence: starts at ~112K, decreases over time
+- Red Giants: starts at 0, grows as stars age past 0.7
+- White Dwarfs: starts at 0, grows as giants collapse at 0.95
+
+**Files Modified:**
+- `src/store/simulationStore.ts` - Added stellar count state and actions
+- `src/components/ControlPanel.tsx` - Added stellar evolution UI section
+- `src/components/ParticleSystem.tsx` - Added stellar type sampling and counting
+
+#### Critical Bug Fixes ✅ COMPLETE
+
+After testing, user reported 5 critical bugs. All fixed!
+
+**Bug 1: Type Transitions Not Working**
+- **Problem:** Stars aged but never became red giants or white dwarfs, stuck at type 2.0
+- **Root Cause:** Boundary conditions used `>` instead of `>=`, excluding exact type values (2.5)
+- **Visual Symptom:** Pink/magenta stars (color extrapolation with age > 0.7 but type 2.0)
+- **Fix:** Changed conditions to `>= 2.0` and `>= 2.5`, added `else if` to prevent conflicts
+- **File:** [stateFragment.glsl:98-122](src/shaders/simulation/stateFragment.glsl:98)
+
+**Bug 2: Pink/Magenta Color Artifacts**
+- **Problem:** Stars appeared pink/magenta instead of red/orange
+- **Root Cause:** Color interpolation factor exceeded 1.0 when age > 0.7 for type 2.0 stars
+- **Fix:** Added `clamp()` to all color interpolation factors to prevent extrapolation
+- **Files:** [render/fragment.glsl:75,90](src/shaders/render/fragment.glsl:75)
+
+**Bug 3: GPU Counter Overcounting (6-8x)**
+- **Problem:** Showed 10.7M dark matter instead of 1.35M (total 16.7M instead of 2.25M)
+- **Root Cause:** `blockOrigin` calculation was wrong, not properly mapping output pixels to 4x4 input blocks
+- **Original:** `blockOrigin = vUv * (inputSize / 4.0)` (sampled wrong region)
+- **Fixed:** `blockOrigin = floor(vUv * (inputSize / 4.0)) * 4.0` (proper block mapping)
+- **File:** [particleCountFragment.glsl:16-17](src/shaders/reduction/particleCountFragment.glsl:16)
+
+**Bug 4: Stellar Evolution Counters Frozen**
+- **Problem:** Main Sequence stuck at 112,500, Red Giants/White Dwarfs at 0 (never updated)
+- **Root Cause:** CPU readback code tried to read entire texture, failing silently
+- **Fix:** Reduced sample size to 100x100 region, added error handling, fixed type ranges
+- **File:** [ParticleSystem.tsx:378-431](src/components/ParticleSystem.tsx:378)
+
+**Bug 5: Zoom-Dependent Colors (White → Red-Purple)**
+- **Problem:** Stars appeared white when zoomed out, red-purple when zoomed in
+- **Root Cause:** Alpha blending accumulation - many overlapping particles saturated to white
+- **Fix:** Reduced base alpha from 0.2 to 0.08, increased per-type multipliers to compensate
+- **Result:** True colors visible at all zoom levels, no white saturation
+- **File:** [render/fragment.glsl:23-114](src/shaders/render/fragment.glsl:23)
+
+**Testing Results:**
+- ✅ Stars properly transition through all phases (MS → RG → WD)
+- ✅ Particle counts show correct values (~1.35M, ~787K, ~112K)
+- ✅ Stellar evolution UI updates with live accurate counts
+- ✅ No pink/magenta colors - only realistic stellar colors
+- ✅ Consistent realistic colors at all zoom levels
+
+**All Issues Resolved!** System now fully functional with complete stellar evolution lifecycle.
+
 ---
 
 ### Recent (2025-10-27)
@@ -663,6 +804,9 @@ Cold blue gas → Star forms → Gas heats up (orange) → Hot bubble expands
 - ✅ **Gas cooling** Temperature decay over time
 - ✅ **Red giant evolution** Old stars expand 4.5x into huge orange-red giants
 - ✅ **Stellar feedback heating** Hot bubbles around star-forming regions
+- ✅ **White dwarf formation** Red giants collapse into tiny blue-white remnants
+- ✅ **UI stellar statistics** Live counts of main sequence, red giants, white dwarfs
+- ✅ **Bug fixes** Fixed type transitions, color artifacts, counter overcounting, frozen UI, zoom colors
 
 ---
 

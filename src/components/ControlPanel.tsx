@@ -10,6 +10,9 @@ export default function ControlPanel() {
     darkMatterCount,
     gasCount,
     starCount,
+    mainSequenceCount,
+    redGiantCount,
+    whiteDwarfCount,
     togglePlay,
     setTimeScale,
     setGravitationalConstant,
@@ -25,16 +28,34 @@ export default function ControlPanel() {
         <label>Particle Counts</label>
         <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginTop: '5px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-            <span style={{ color: 'rgba(64, 32, 96, 1)' }}>⬤ Dark Matter:</span>
+            <span style={{ color: 'rgba(128, 64, 192, 1)' }}>⬤ Dark Matter:</span>
             <span>{darkMatterCount.toLocaleString()}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
             <span style={{ color: 'rgba(51, 153, 255, 1)' }}>⬤ Gas:</span>
             <span>{gasCount.toLocaleString()}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span style={{ color: 'rgba(255, 200, 100, 1)' }}>⬤ Stars:</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+            <span style={{ color: 'rgba(255, 200, 100, 1)' }}>⬤ Stars (Total):</span>
             <span>{starCount.toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="control-group">
+        <label>Stellar Evolution</label>
+        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', marginTop: '5px', marginLeft: '10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+            <span style={{ color: 'rgba(150, 200, 255, 1)' }}>⚬ Main Sequence:</span>
+            <span>{mainSequenceCount.toLocaleString()}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+            <span style={{ color: 'rgba(255, 120, 40, 1)' }}>⚬ Red Giants:</span>
+            <span>{redGiantCount.toLocaleString()}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: 'rgba(220, 230, 255, 1)' }}>⚬ White Dwarfs:</span>
+            <span>{whiteDwarfCount.toLocaleString()}</span>
           </div>
         </div>
       </div>

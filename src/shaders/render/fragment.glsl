@@ -20,13 +20,13 @@ void main() {
 
     // Color based on particle type with temperature/age variation
     vec3 color;
-    float baseAlpha = alpha * 0.2; // Scale down for 4M+ particles
+    float baseAlpha = alpha * 0.08; // Reduced from 0.2 to prevent white saturation when zoomed out
 
     if (vType < 0.5) {
         // Dark Matter (type = 0) - ~60%
         // Faint purple - represents invisible dark matter scaffolding
         color = vec3(0.4, 0.2, 0.6);
-        baseAlpha *= 0.5; // Dim but visible
+        baseAlpha *= 0.8; // Reduced from 0.5, still dim but visible
         // Dark matter has no temperature variation
     } else if (vType < 1.5) {
         // Gas (type = 1) - ~35%
@@ -47,7 +47,7 @@ void main() {
                 (temp - 0.5) * 2.0
             );
         }
-        baseAlpha *= 1.5; // Bright
+        baseAlpha *= 2.5; // Increased from 1.5 to compensate for lower base alpha
     } else if (vType < 2.5) {
         // Main Sequence Stars (type = 2.0) - ~5%
         // Age-based stellar colors with DRAMATIC differences for easy visual tracking
@@ -60,7 +60,7 @@ void main() {
                 vec3(0.3, 0.6, 1.0),  // Bright blue (young, age 0.3)
                 age / 0.3
             );
-            baseAlpha *= 3.0; // Extra bright to see young stars
+            baseAlpha *= 6.0; // Increased from 3.0 to compensate for lower base
         } else if (age < 0.6) {
             // Mature stars: BLUE → YELLOW (age 0.3-0.6)
             color = mix(
@@ -68,15 +68,17 @@ void main() {
                 vec3(1.0, 1.0, 0.0),  // Pure yellow (age 0.6)
                 (age - 0.3) / 0.3
             );
-            baseAlpha *= 2.5; // Bright
+            baseAlpha *= 5.0; // Increased from 2.5
         } else {
-            // Old stars: YELLOW → ORANGE-RED (age 0.6-0.7, approaching red giant phase)
+            // Old stars: YELLOW → ORANGE-RED (age 0.6-0.7+, approaching red giant phase)
+            // Clamp factor to prevent extrapolation beyond red if type transition is delayed
+            float factor = clamp((age - 0.6) / 0.1, 0.0, 1.0);
             color = mix(
                 vec3(1.0, 1.0, 0.0),  // Pure yellow (age 0.6)
-                vec3(1.0, 0.4, 0.0),  // Deep orange (age 0.7, ready to expand)
-                (age - 0.6) / 0.1
+                vec3(1.0, 0.4, 0.0),  // Deep orange (age 0.7+, should be red giant)
+                factor
             );
-            baseAlpha *= 2.0; // Dimmer as they age
+            baseAlpha *= 4.0; // Increased from 2.0
         }
     } else if (vType < 3.0) {
         // Red Giants (type = 2.5) - Expanded, cool evolved stars
@@ -84,17 +86,31 @@ void main() {
         float age = vTempOrAge;
 
         // Red giants continue aging from orange to dark red
-        // age 0.7 = orange (matches pre-giant phase), age 0.99 = dark red
+        // age 0.7 = orange (matches pre-giant phase), age 0.99+ = dark red
+        float giantFactor = clamp((age - 0.7) / 0.29, 0.0, 1.0);
         color = mix(
             vec3(1.0, 0.4, 0.0),  // Deep orange (age 0.7, fresh red giant)
             vec3(0.8, 0.1, 0.0),  // Dark red (age 0.99, ancient red giant)
-            (age - 0.7) / 0.29
+            giantFactor
         );
-        baseAlpha *= 1.2; // Dimmer than main sequence (but large size compensates)
+        baseAlpha *= 2.5; // Increased from 1.2 (large size + lower base = still visible)
+    } else if (vType < 4.0) {
+        // White Dwarfs (type = 3.0) - Tiny, hot stellar remnants
+        // VERY SMALL size, hot blue-white color, bright
+        float cooling = vTempOrAge; // 0.0 = hot (fresh), 0.99 = cool (ancient)
+
+        // White dwarfs cool from blue-white to dim white over time
+        color = mix(
+            vec3(0.7, 0.85, 1.0),  // Hot blue-white (fresh white dwarf, cooling 0.0)
+            vec3(0.95, 0.95, 0.95), // Dim white (cool white dwarf, cooling 0.99)
+            cooling
+        );
+        // Very bright despite small size - concentrated energy
+        baseAlpha *= 8.0; // Increased from 4.0 to compensate for tiny size
     } else {
-        // Compact objects (type >= 3.0) - white dwarfs, neutron stars, black holes
+        // Future: Neutron stars (type 4.0) and Black holes (type 5.0)
         color = vec3(1.0, 1.0, 1.0); // Placeholder white
-        baseAlpha *= 1.5;
+        baseAlpha *= 4.0; // Increased from 2.0
     }
 
     // Output with type-specific alpha

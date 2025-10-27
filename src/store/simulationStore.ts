@@ -20,6 +20,10 @@ interface SimulationState {
   darkMatterCount: number
   gasCount: number
   starCount: number
+  // Stellar evolution counts
+  mainSequenceCount: number
+  redGiantCount: number
+  whiteDwarfCount: number
 
   // Actions
   togglePlay: () => void
@@ -30,6 +34,7 @@ interface SimulationState {
   toggleBarnesHut: () => void
   reset: () => void
   setParticleCounts: (darkMatter: number, gas: number, stars: number) => void
+  setStellarCounts: (mainSequence: number, redGiant: number, whiteDwarf: number) => void
 }
 
 export const useSimulationStore = create<SimulationState>((set) => ({
@@ -48,6 +53,11 @@ export const useSimulationStore = create<SimulationState>((set) => ({
   gasCount: Math.floor(PARTICLE_COUNT * 0.35),
   starCount: Math.floor(PARTICLE_COUNT * 0.05),
 
+  // Initial stellar evolution counts
+  mainSequenceCount: Math.floor(PARTICLE_COUNT * 0.05), // All stars start as main sequence
+  redGiantCount: 0,
+  whiteDwarfCount: 0,
+
   // Actions
   togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
 
@@ -63,6 +73,12 @@ export const useSimulationStore = create<SimulationState>((set) => ({
     darkMatterCount: darkMatter,
     gasCount: gas,
     starCount: stars
+  }),
+
+  setStellarCounts: (mainSequence: number, redGiant: number, whiteDwarf: number) => set({
+    mainSequenceCount: mainSequence,
+    redGiantCount: redGiant,
+    whiteDwarfCount: whiteDwarf
   }),
 
   toggleBarnesHut: () => set((state) => ({
@@ -82,6 +98,9 @@ export const useSimulationStore = create<SimulationState>((set) => ({
     // Reset counts to initial values
     darkMatterCount: Math.floor(PARTICLE_COUNT * 0.60),
     gasCount: Math.floor(PARTICLE_COUNT * 0.35),
-    starCount: Math.floor(PARTICLE_COUNT * 0.05)
+    starCount: Math.floor(PARTICLE_COUNT * 0.05),
+    mainSequenceCount: Math.floor(PARTICLE_COUNT * 0.05),
+    redGiantCount: 0,
+    whiteDwarfCount: 0
   }))
 }))

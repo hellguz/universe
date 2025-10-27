@@ -35,9 +35,11 @@ void main() {
     } else if (particleType < 2.5) {
         typeScale = 1.8; // Main sequence stars: larger, brighter points
     } else if (particleType < 3.0) {
-        typeScale = 4.5; // Red giants: HUGE (3-5x larger than main sequence)
+        typeScale = 4.5; // Red giants: HUGE (4.5x larger than main sequence)
+    } else if (particleType < 4.0) {
+        typeScale = 0.5; // White dwarfs: TINY (Earth-sized objects, very compact)
     } else {
-        typeScale = 1.2; // Compact objects: small
+        typeScale = 0.3; // Neutron stars/black holes: extremely small (future)
     }
 
     // Particle size based on distance (perspective scaling)

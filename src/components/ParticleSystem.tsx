@@ -34,7 +34,8 @@ export default function ParticleSystem() {
     useBarnesHut,
     resetKey,
     setCurrentTime,
-    setParticleCounts
+    setParticleCounts,
+    setStellarCounts
   } = useSimulationStore()
 
   // Initialize FBO textures and render targets
@@ -373,6 +374,61 @@ export default function ParticleSystem() {
 
       // Update store
       setParticleCounts(darkMatter, gas, stars)
+
+      // Count stellar subtypes by sampling particles (CPU readback)
+      // Sample a small region to estimate distribution
+      if (stars > 0) {
+        // Sample a 100x100 region (10,000 particles) for statistics
+        const sampleSize = Math.min(100, TEXTURE_SIZE)
+        const buffer = new Float32Array(sampleSize * sampleSize * 4)
+
+        try {
+          // Read sample region from position texture
+          gl.setRenderTarget(finalPosRT)
+          const ctx = gl.getContext() as WebGL2RenderingContext
+          ctx.readPixels(0, 0, sampleSize, sampleSize, ctx.RGBA, ctx.FLOAT, buffer)
+          gl.setRenderTarget(null)
+
+          let mainSequence = 0
+          let redGiant = 0
+          let whiteDwarf = 0
+          let totalStarsSampled = 0
+
+          // Count sampled stellar types
+          for (let i = 0; i < buffer.length; i += 4) {
+            const type = buffer[i + 3] // w component has particle type
+            if (type >= 2.0 && type < 2.5) {
+              mainSequence++
+              totalStarsSampled++
+            } else if (type >= 2.5 && type < 3.0) {
+              redGiant++
+              totalStarsSampled++
+            } else if (type >= 3.0 && type < 4.0) {
+              whiteDwarf++
+              totalStarsSampled++
+            }
+          }
+
+          // Extrapolate from sample to total stars
+          if (totalStarsSampled > 0) {
+            const ratio = stars / totalStarsSampled
+            setStellarCounts(
+              Math.round(mainSequence * ratio),
+              Math.round(redGiant * ratio),
+              Math.round(whiteDwarf * ratio)
+            )
+          } else {
+            // No stars in sample, assume all main sequence
+            setStellarCounts(stars, 0, 0)
+          }
+        } catch (error) {
+          // ReadPixels failed, fall back to default
+          console.warn('Failed to count stellar types:', error)
+          setStellarCounts(stars, 0, 0)
+        }
+      } else {
+        setStellarCounts(0, 0, 0)
+      }
     }
   })
 
