@@ -62,18 +62,14 @@ void main() {
     // ===== STAR AGING =====
     if (particleType > 1.5 && particleType < 3.0) {
         // Stars (main sequence and red giants): velocity.w stores AGE (0.0 = newborn, 1.0 = ancient)
-        // Newly formed stars inherit gas temperature (0.1-0.4) - need to initialize to age 0.0
-        // Use marker value 0.995 to indicate "needs initialization" to avoid reset loop
 
-        if (tempOrAge >= 0.1 && tempOrAge <= 0.4) {
-            // Newly formed star (just converted from gas, has formation temp range)
-            // Mark for initialization next frame (avoids reset loop when stars age to 0.1+)
-            tempOrAge = 0.995; // Marker value
-        } else if (tempOrAge > 0.99) {
-            // Marked for initialization, reset to age 0.0 and start aging
+        if (particleType > 2.0 && particleType < 2.01) {
+            // Newly formed star (type 2.001) - initialize age to 0.0
+            // This star just converted from gas and inherited gas temperature
             tempOrAge = 0.0;
         } else {
-            // Existing star - age normally (cap at 0.98 to avoid marker value)
+            // Normal aging for main sequence (2.0) and red giants (2.5)
+            // No upper cap needed - ages can reach 0.98 for ancient stars
             tempOrAge = min(tempOrAge + agingRate * delta, 0.98);
         }
     }

@@ -426,6 +426,7 @@ export default function ParticleSystem() {
           let neutronStar = 0
           let blackHole = 0
           let totalStarsSampled = 0
+          let agingStarsSampled = 0 // Only main sequence + red giants (exclude white dwarfs/compact objects)
           let maxAge = 0
           let minAge = 1.0
           let ageSum = 0
@@ -438,24 +439,35 @@ export default function ParticleSystem() {
             if (type >= 2.0 && type < 2.5) {
               mainSequence++
               totalStarsSampled++
-              maxAge = Math.max(maxAge, age)
-              minAge = Math.min(minAge, age)
-              ageSum += age
+              // Track age only if valid (not marker value -1.0)
+              if (age >= 0.0) {
+                agingStarsSampled++
+                maxAge = Math.max(maxAge, age)
+                minAge = Math.min(minAge, age)
+                ageSum += age
+              }
             } else if (type >= 2.5 && type < 3.0) {
               redGiant++
               totalStarsSampled++
-              maxAge = Math.max(maxAge, age)
-              minAge = Math.min(minAge, age)
-              ageSum += age
+              // Track age only if valid (not marker value -1.0)
+              if (age >= 0.0) {
+                agingStarsSampled++
+                maxAge = Math.max(maxAge, age)
+                minAge = Math.min(minAge, age)
+                ageSum += age
+              }
             } else if (type >= 3.0 && type < 4.0) {
               whiteDwarf++
               totalStarsSampled++
+              // White dwarfs use cooling time, not stellar age - don't track
             } else if (type >= 4.0 && type < 5.0) {
               neutronStar++
               totalStarsSampled++
+              // Neutron stars use different age scale - don't track
             } else if (type >= 5.0 && type < 6.0) {
               blackHole++
               totalStarsSampled++
+              // Black holes use activity level, not age - don't track
             }
           }
 
@@ -488,7 +500,7 @@ export default function ParticleSystem() {
             setStellarCounts(mainSeqCount, redGiantCount, whiteDwarfCount, neutronStarCount, blackHoleCount)
 
             // Store stellar data for unified report
-            const avgAge = ageSum / totalStarsSampled
+            const avgAge = agingStarsSampled > 0 ? ageSum / agingStarsSampled : 0
             diagnosticData.current.stellarStats = {
               mainSequence: mainSeqCount,
               redGiants: redGiantCount,

@@ -91,14 +91,23 @@ void main() {
             float rand = random(vUv);
 
             if (rand < formationRate) {
-                // Transform gas → star!
-                particleType = TYPE_STAR;
+                // Transform gas → newly formed star!
+                // Use 2.001 marker to indicate "needs age initialization"
+                particleType = 2.001;
 
                 // Note: temperature/age transition handled in velocityStateFragment
                 // Stars start with age 0.0 (newborn), not high temperature
                 // This will be set properly in the next velocity state pass
             }
         }
+    }
+
+    // ===== NEWLY FORMED STAR → MAIN SEQUENCE =====
+    // Transition newly formed stars (2.001) to normal main sequence (2.0)
+    // This happens one frame after formation, after age initialization
+    if (particleType > 2.0 && particleType < 2.01) {
+        // Newly formed star marker detected - transition to main sequence
+        particleType = 2.0; // Now a normal main sequence star
     }
 
     // ===== STELLAR EVOLUTION: MAIN SEQUENCE → RED GIANT =====

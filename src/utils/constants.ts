@@ -26,10 +26,11 @@ export const GRAVITATIONAL_CONSTANT = 0.0001 // Scaled G for visible effects
 export const TIMESTEP = 0.016 // ~60fps
 export const SOFTENING_LENGTH = 6 // Prevent singularities (larger for more particles)
 
-// Initial conditions
-export const INITIAL_SPREAD = 80 // Sphere radius for initial distribution (larger for more particles)
-export const INITIAL_VELOCITY_SPREAD = 0.05 // Random velocity magnitude (reduced for stability)
-export const INITIAL_ROTATION_SPEED = 0.08 // Base rotation speed for galaxy (angular momentum conservation)
+// Initial conditions - Natural structure formation from density perturbations
+export const INITIAL_SPREAD = 110 // Spherical distribution radius (73% of world space) - comfortable margin from boundaries
+export const INITIAL_VELOCITY_SPREAD = 0.1 // Random velocity magnitude (small-scale motions)
+export const INITIAL_ROTATION_SPEED = 0.0 // No initial rotation (emerges naturally from gravitational collapse)
+export const TIDAL_ANGULAR_MOMENTUM = 0.02 // Tidal torque strength (~2% of velocity dispersion) - generates proto-galaxy spin
 
 // Rendering - optimized for high particle count
 export const PARTICLE_SIZE = 0.3

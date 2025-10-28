@@ -19,16 +19,21 @@ void main() {
     // Integrate position
     position += velocity * delta;
 
-    // Boundary wrapping to keep particles in simulation volume
-    // Wrap around world boundaries (periodic boundary conditions)
-    float halfWorld = worldSize * 0.5;
+    // Soft spherical boundary confinement (no hard cube edges!)
+    // Gently push particles toward center if they drift too far
+    float dist = length(position);
+    float maxRadius = worldSize * 0.45; // Use 90% of half-world size
 
-    if (position.x > halfWorld) position.x -= worldSize;
-    if (position.x < -halfWorld) position.x += worldSize;
-    if (position.y > halfWorld) position.y -= worldSize;
-    if (position.y < -halfWorld) position.y += worldSize;
-    if (position.z > halfWorld) position.z -= worldSize;
-    if (position.z < -halfWorld) position.z += worldSize;
+    if (dist > maxRadius) {
+        // Calculate soft restoring force toward center
+        vec3 pushDir = -normalize(position); // Direction toward origin
+        float overshoot = dist - maxRadius;
+
+        // Apply gentle push (increases with distance beyond boundary)
+        // This creates a soft "pressure" that keeps particles contained
+        float pushStrength = overshoot * 0.01; // Gentle, progressive force
+        velocity += pushDir * pushStrength;
+    }
 
     // Output updated position (preserve particle type)
     gl_FragColor = vec4(position, particleType);
