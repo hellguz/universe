@@ -52,8 +52,17 @@ vec2 grid3DTo2D(vec3 gridPos) {
   );
 }
 
-// Simple pseudo-random function based on position
-float random(vec2 st) {
+// Random function for ONE-TIME decisions (mass assignment, supernova fate)
+// Position-based ONLY - each particle gets same value every frame
+// Prevents multiple dice rolls for critical one-time events
+float randomOnce(vec2 st) {
+  return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);
+}
+
+// Random function for STOCHASTIC processes (star formation)
+// Time-based - allows probabilistic events to happen over time
+// Each frame gives different random value for ongoing processes
+float randomTime(vec2 st) {
   return fract(sin(dot(st.xy, vec2(12.9898, 78.233)) + time) * 43758.5453123);
 }
 
@@ -88,7 +97,8 @@ void main() {
 
         if (afterDarkAges && highDensity && rightTemperature) {
             // Stochastic star formation (probability per frame)
-            float rand = random(vUv);
+            // Use time-varying random for ongoing probabilistic process
+            float rand = randomTime(vUv);
 
             if (rand < formationRate) {
                 // Transform gas → newly formed star!
@@ -102,56 +112,78 @@ void main() {
         }
     }
 
-    // ===== NEWLY FORMED STAR → MAIN SEQUENCE =====
-    // Transition newly formed stars (2.001) to normal main sequence (2.0)
-    // This happens one frame after formation, after age initialization
+    // ===== NEWLY FORMED STAR → MAIN SEQUENCE (with mass assignment) =====
+    // Transition newly formed stars (2.001) to main sequence with realistic mass distribution
+    // Realistic: Only ~1% of stars are massive enough (>8 M☉) to go supernova
     if (particleType > 2.0 && particleType < 2.01) {
-        // Newly formed star marker detected - transition to main sequence
-        particleType = 2.0; // Now a normal main sequence star
+        // Assign stellar mass class based on Initial Mass Function (IMF)
+        // Use position-based random for ONE-TIME decision (mass is assigned at birth)
+        float massRoll = randomOnce(vUv + vec2(0.567, 0.234)); // Unique seed for mass assignment
+
+        if (massRoll < 0.01) {
+            // Massive star (>8 M☉) - RARE! Only 1% of stars
+            // These will age faster and can go supernova
+            particleType = 2.002;
+        } else {
+            // Normal/low-mass star (0.1-8 M☉) - 99% of stars
+            // These age slowly and become white dwarfs
+            particleType = 2.0;
+        }
     }
 
     // ===== STELLAR EVOLUTION: MAIN SEQUENCE → RED GIANT =====
     // Check if this is a main sequence star that's old enough to evolve
     if (particleType >= 2.0 && particleType < 2.5) {
-        // Main sequence star (type 2.0)
         // Check age (stored in velocity.w)
         float age = temperature; // Actually age for stars
 
         // Red giant threshold: age >= 0.7
         if (age >= 0.7) {
-            // Transition to red giant!
-            particleType = 2.5; // Red giant type
+            // Transition to red giant - preserve mass class in sub-type
+            if (particleType > 2.001) {
+                // Massive star (2.002) → Massive red giant (2.502)
+                particleType = 2.502;
+            } else {
+                // Normal star (2.0) → Normal red giant (2.5)
+                particleType = 2.5;
+            }
         }
     }
 
     // ===== STELLAR EVOLUTION: RED GIANT → SUPERNOVA OR WHITE DWARF =====
     // Check if this is a red giant old enough to shed its outer layers
     else if (particleType >= 2.5 && particleType < 3.0) {
-        // Red giant (type 2.5)
         float age = temperature; // Actually age for stars
 
-        // Supernova check: Some massive red giants explode at age 0.85
-        if (age >= supernovaAgeThreshold && age < 0.86) {
-            // Only check once when crossing threshold (0.85-0.86 range)
-            float rand1 = random(vUv + vec2(0.123, 0.456));
+        // MASSIVE RED GIANTS (2.502) → SUPERNOVA
+        // Only massive stars (>8 M☉) can go supernova!
+        if (particleType > 2.501) {
+            // Massive red giant - will explode as supernova at age 0.85
+            // Use position-based random for ONE-TIME decision (prevents multiple rolls)
+            if (age >= supernovaAgeThreshold && age < 0.86) {
+                // Check supernova probability (only once per massive star)
+                float rand1 = randomOnce(vUv + vec2(0.123, 0.456));
 
-            if (rand1 < supernovaProbability) {
-                // This star goes SUPERNOVA!
-                // Determine compact object type
-                float rand2 = random(vUv + vec2(0.789, 0.321));
+                if (rand1 < supernovaProbability) {
+                    // This massive star goes SUPERNOVA!
+                    // Determine compact object type
+                    float rand2 = randomOnce(vUv + vec2(0.789, 0.321));
 
-                if (rand2 < blackHoleProbability) {
-                    particleType = 5.0; // Black hole!
-                } else {
-                    particleType = 4.0; // Neutron star!
+                    if (rand2 < blackHoleProbability) {
+                        particleType = 5.0; // Black hole!
+                    } else {
+                        particleType = 4.0; // Neutron star!
+                    }
+                    // Note: velocity.w will be reset to 0.99 in velocityStateFragment to trigger flash
                 }
-                // Note: velocity.w will be reset to 0.99 in velocityStateFragment to trigger flash
             }
         }
 
-        // White dwarf threshold: age >= 0.95 (very ancient, didn't go supernova)
+        // NORMAL RED GIANTS (2.5) → WHITE DWARF
+        // Normal stars cannot go supernova - they always become white dwarfs
+        // White dwarf threshold: age >= 0.95 (very ancient)
         if (age >= 0.95 && particleType >= 2.5 && particleType < 3.0) {
-            // Shed outer layers and become white dwarf! (only if didn't just go supernova)
+            // Shed outer layers and become white dwarf!
             particleType = 3.0; // White dwarf (compact object)
             // Note: Age will be reset to 0.0 in velocityStateFragment to represent fresh white dwarf
         }

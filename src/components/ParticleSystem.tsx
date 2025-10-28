@@ -29,8 +29,9 @@ export default function ParticleSystem() {
   const { gl } = useThree()
   const pointsRef = useRef<THREE.Points>(null)
   const lastCountTime = useRef(0)
+  const lastReportTime = useRef(0) // Track last console report time for 20-second intervals
   const simulationTime = useRef(0)
-  const logFrameCounter = useRef(0) // Frame-based logging (works at any time scale)
+  const logFrameCounter = useRef(0) // Frame-based logging (works at any time scale) - DEPRECATED, use lastReportTime instead
   const diagnosticData = useRef<any>({}) // Store data for unified status report
 
   const {
@@ -136,6 +137,7 @@ export default function ParticleSystem() {
   useEffect(() => {
     simulationTime.current = 0
     lastCountTime.current = 0
+    lastReportTime.current = 0
   }, [resetKey])
 
   // Create simulation materials (for physics calculation)
@@ -548,9 +550,9 @@ export default function ParticleSystem() {
       }
     }
 
-    // ===== UNIFIED STATUS REPORT (every 20 seconds = 1200 frames at 60fps) =====
-    // Runs every frame to catch exact intervals regardless of particle counting timing
-    if (logFrameCounter.current % 1200 === 0 && logFrameCounter.current > 0) {
+    // ===== UNIFIED STATUS REPORT (every 20 simulation seconds) =====
+    // Time-based reporting is more reliable than frame-based (handles variable frame rates, HMR, pauses)
+    if (simulationTime.current - lastReportTime.current >= 20.0 && simulationTime.current > 0) {
       const universeAgeGyr = (simulationTime.current * UNIVERSE_TIME_SCALE) / 1000
       const pc = diagnosticData.current.particleCounts
       const ss = diagnosticData.current.stellarStats
@@ -619,6 +621,9 @@ export default function ParticleSystem() {
         }
         console.log('='.repeat(80) + '\n')
       }
+
+      // Update last report time to prevent duplicate reports
+      lastReportTime.current = simulationTime.current
     }
   })
 

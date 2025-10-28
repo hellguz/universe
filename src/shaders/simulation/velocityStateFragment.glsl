@@ -68,9 +68,19 @@ void main() {
             // This star just converted from gas and inherited gas temperature
             tempOrAge = 0.0;
         } else {
-            // Normal aging for main sequence (2.0) and red giants (2.5)
-            // No upper cap needed - ages can reach 0.98 for ancient stars
-            tempOrAge = min(tempOrAge + agingRate * delta, 0.98);
+            // Mass-dependent aging: Massive stars age MUCH faster (shorter lifetimes)
+            float agingMultiplier = 1.0;
+
+            // Massive stars (2.002) and massive red giants (2.502) age 5x faster
+            // Realistic: Massive stars live ~10-20 Myr, normal stars live ~10 Gyr
+            if (particleType > 2.001 && particleType < 2.003) {
+                agingMultiplier = 5.0; // Massive main sequence stars
+            } else if (particleType > 2.501) {
+                agingMultiplier = 5.0; // Massive red giants
+            }
+
+            // Apply age increase with mass-dependent rate
+            tempOrAge = min(tempOrAge + agingRate * delta * agingMultiplier, 0.98);
         }
     }
     // ===== WHITE DWARF AGING =====

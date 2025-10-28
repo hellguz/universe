@@ -56,7 +56,7 @@ export const CAMERA_FAR = 10000
 export const STAR_FORMATION_DENSITY_THRESHOLD = 0.8 // Mass units per cell for star formation
 export const STAR_FORMATION_TEMP_MIN = 0.1 // Minimum temperature for star formation (cold molecular clouds)
 export const STAR_FORMATION_TEMP_MAX = 0.4 // Maximum temperature for star formation (cool, not hot)
-export const STAR_FORMATION_RATE = 0.0003 // Probability per frame (0.03% - gradual star formation over cosmic history)
+export const STAR_FORMATION_RATE = 0.00005 // Probability per frame (0.01% - continuous star formation throughout cosmic history, ~20-30% gas retention)
 
 // Stellar Evolution - Calibrated for realistic 10 Gyr main sequence lifetime
 export const STELLAR_AGING_RATE = 0.00161 // Stars reach red giant phase (0.7) at 10 Gyr universe age (434.78 sim seconds)
