@@ -14,8 +14,8 @@ export const BARNES_HUT_THETA = 0.5 // Opening angle criterion (0.5 = good balan
 
 // Distance thresholds for hierarchical approximation
 export const NEAR_FIELD_DISTANCE = 30.0 // Use individual particles
-export const MID_FIELD_DISTANCE = 400.0 // Use small clusters (fine mipmap levels)
-export const FAR_FIELD_DISTANCE = 600.0 // Use large clusters (coarse mipmap levels)
+export const MID_FIELD_DISTANCE = 100.0 // Use small clusters (fine mipmap levels)
+export const FAR_FIELD_DISTANCE = 200.0 // Use large clusters (coarse mipmap levels)
 
 // Performance settings - Fixed Sample Budget (fallback if Barnes-Hut disabled)
 export const SAMPLES_PER_PARTICLE = 128 // Fixed computational budget per particle

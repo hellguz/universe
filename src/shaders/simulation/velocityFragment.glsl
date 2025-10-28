@@ -136,10 +136,13 @@ void main() {
     }
 
     // ===== HIERARCHICAL FAR FIELD: Mass grid sampling =====
-    float cellSize = worldSize / gridSize; // Now 300.0 / 64.0 = 4.6875
+    // Sample mass grid at different LOD levels based on distance
+    // The mass grid is 64³ cells covering worldSize (200 units)
+    float cellSize = worldSize / gridSize; // ~3.125 units per cell
 
-    int gridSamples = 27;
-    float gridStride = gridSize / 3.0; // 64 / 3.0 = ~21.3
+    // Iterate through grid cells at different LOD levels
+    int gridSamples = 27; // Sample 3x3x3 cells around particle
+    float gridStride = gridSize / 3.0; // ~21 cells stride
 
     for (float gz = 0.0; gz < gridSize; gz += gridStride) {
         for (float gy = 0.0; gy < gridSize; gy += gridStride) {
@@ -147,51 +150,48 @@ void main() {
                 vec3 gridPos = vec3(gx, gy, gz);
                 vec2 uv = grid3DTo2D(gridPos);
 
-                vec3 gridFrac = gridPos / gridSize;
+                // Determine LOD based on distance to this cell
+                // First, get cell center in world space
+                vec3 gridFrac = gridPos / gridSize; // [0, 1]
                 vec3 cellCenter = (gridFrac * worldSize) - vec3(worldSize * 0.5);
+
                 vec3 diff = cellCenter - position;
                 float dist = length(diff);
 
-                if (dist < nearFieldDist) continue; // Skip near field
+                // Skip if too close (handled by near field)
+                if (dist < nearFieldDist) continue;
 
-                // Determine LOD
+                // Determine LOD level based on Barnes-Hut theta criterion
+                // theta = cellSize / distance
+                // Higher distance = coarser LOD
                 float lod = 0.0;
                 if (dist > farFieldDist) {
-                    lod = 4.0; // Coarsest (16x16 block)
+                    lod = 4.0; // Very coarse (level 4)
                 } else if (dist > midFieldDist) {
-                    lod = 2.0; // Medium (4x4 block)
+                    lod = 2.0; // Coarse (level 2)
                 } else {
-                    lod = 1.0; // Fine (2x2 block)
+                    lod = 1.0; // Fine (level 1)
                 }
 
-                // --- START OF FIX ---
-
-                // 1. Sample the mipmapped *accumulated* texture
+                // Sample mass grid at computed LOD (WebGL 2.0)
                 vec4 massData = textureLod(massTexture, uv, lod);
-                
-                vec3 weightedPos = massData.xyz; // (Sum(P*M)) / N
-                float averageMass = massData.w; // (Sum(M)) / N
+                vec3 centerOfMass = massData.xyz;
+                float totalMass = massData.w;
 
-                if (averageMass < 0.00001) continue; // Skip empty cell
+                // Skip empty cells
+                if (totalMass < 0.0001) continue;
 
-                // 2. Calculate Center of Mass (this math is correct)
-                vec3 centerOfMass = weightedPos / averageMass; 
-
-                // 3. Calculate *actual* Total Mass by "un-averaging"
-                // N = pow(4.0, lod). We must multiply by N.
-                float totalMass = averageMass * pow(4.0, lod);
-
-                // 4. Calculate gravity from this cluster
+                // Calculate gravity from this cluster
                 vec3 clusterDiff = centerOfMass - position;
                 float clusterDist = length(clusterDiff);
 
+                // Avoid singularity (use max of cell size or softening)
                 clusterDist = max(clusterDist, max(cellSize, softeningLength));
-                
-                // 5. Use the *correct* totalMass
+
+                // Gravity from cluster
                 float clusterForceMag = G * totalMass / (clusterDist * clusterDist);
+
                 acceleration += normalize(clusterDiff) * clusterForceMag;
-                
-                // --- END OF FIX ---
             }
         }
     }
