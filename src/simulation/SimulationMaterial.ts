@@ -13,7 +13,8 @@ import {
   FAR_FIELD_DISTANCE,
   SOFTENING_LENGTH,
   SUPERNOVA_RADIUS,
-  SUPERNOVA_VELOCITY_BOOST
+  SUPERNOVA_VELOCITY_BOOST,
+  BLACK_HOLE_GRAVITY_MULTIPLIER
 } from '../utils/constants'
 
 export function createVelocityMaterial(
@@ -46,7 +47,9 @@ export function createVelocityMaterial(
       softeningLength: { value: SOFTENING_LENGTH },
       // Supernova parameters
       supernovaRadius: { value: SUPERNOVA_RADIUS },
-      supernovaVelocityBoost: { value: SUPERNOVA_VELOCITY_BOOST }
+      supernovaVelocityBoost: { value: SUPERNOVA_VELOCITY_BOOST },
+      // Black hole parameters
+      blackHoleGravityMultiplier: { value: BLACK_HOLE_GRAVITY_MULTIPLIER }
     },
     vertexShader: simulationVertexShader,
     fragmentShader

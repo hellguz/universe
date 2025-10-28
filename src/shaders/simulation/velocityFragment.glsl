@@ -24,6 +24,9 @@ uniform float softeningLength; // Prevent force singularities
 uniform float supernovaRadius; // Explosion blast radius
 uniform float supernovaVelocityBoost; // Ejecta speed multiplier
 
+// Black hole parameters
+uniform float blackHoleGravityMultiplier; // Enhanced gravitational pull (3x)
+
 varying vec2 vUv;
 
 // Convert world position to grid coordinates
@@ -103,6 +106,13 @@ void main() {
             // Direct gravity calculation
             float representedMass = nearStride * nearStride; // Each sample represents stride² particles
             float forceMag = G * representedMass / (dist * dist);
+
+            // ===== BLACK HOLE ENHANCED GRAVITY =====
+            // Black holes pull 3x harder than normal particles
+            bool isBlackHole = (otherType >= 5.0 && otherType < 6.0);
+            if (isBlackHole) {
+                forceMag *= blackHoleGravityMultiplier; // 3x gravitational pull!
+            }
 
             acceleration += normalize(diff) * forceMag;
 
