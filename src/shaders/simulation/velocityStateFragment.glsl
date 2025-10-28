@@ -62,9 +62,15 @@ void main() {
     // ===== STAR AGING =====
     if (particleType > 1.5 && particleType < 3.0) {
         // Stars (main sequence and red giants): velocity.w stores AGE (0.0 = newborn, 1.0 = ancient)
-        // Stars now form from cold gas (temp 0.1-0.4), so they inherit reasonable starting ages
-        // No reset needed - just age normally!
-        tempOrAge = min(tempOrAge + agingRate * delta, 0.99);
+        // Newly formed stars inherit gas temperature (0.1-0.4) - reset to 0.0 for newborn stars
+        if (tempOrAge < 0.5) {
+            // This is a newly formed star (just converted from gas with temp 0.1-0.4)
+            // Reset to age 0.0 so stars start as newborns
+            tempOrAge = 0.0;
+        } else {
+            // Existing star - age normally
+            tempOrAge = min(tempOrAge + agingRate * delta, 0.99);
+        }
     }
     // ===== WHITE DWARF AGING =====
     else if (particleType >= 3.0 && particleType < 4.0) {

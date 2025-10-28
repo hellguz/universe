@@ -55,10 +55,10 @@ export const CAMERA_FAR = 10000
 export const STAR_FORMATION_DENSITY_THRESHOLD = 0.8 // Mass units per cell for star formation
 export const STAR_FORMATION_TEMP_MIN = 0.1 // Minimum temperature for star formation (cold molecular clouds)
 export const STAR_FORMATION_TEMP_MAX = 0.4 // Maximum temperature for star formation (cool, not hot)
-export const STAR_FORMATION_RATE = 0.005 // Probability per frame (0.5% - builds population over 1-3 minutes)
+export const STAR_FORMATION_RATE = 0.002 // Probability per frame (0.2% - gas lasts throughout simulation)
 
-// Stellar Evolution - Proper 10 Gyr main sequence lifetime (accounts for delta multiplication in shader)
-export const STELLAR_AGING_RATE = 0.001 // Stars reach red giant phase (0.7) after ~730 sim seconds (16.8 Gyr of universe time)
+// Stellar Evolution - Calibrated for realistic 10 Gyr main sequence lifetime
+export const STELLAR_AGING_RATE = 0.00161 // Stars reach red giant phase (0.7) at 10 Gyr universe age (434.78 sim seconds)
 export const RED_GIANT_AGE_THRESHOLD = 0.7 // Stars become red giants at this age (~10 Gyr in real time)
 export const WHITE_DWARF_AGE_THRESHOLD = 0.95 // Red giants become white dwarfs at this age (~11 Gyr in real time)
 

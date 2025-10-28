@@ -586,20 +586,24 @@ export default function ParticleSystem() {
         console.log(`🎯 Thresholds: 0.700 → Red Giant | 0.850 → Supernova | 0.950 → White Dwarf`)
         console.log('')
         console.log('━━━ EXPECTED MILESTONES ━━━')
-        if (universeAgeGyr < 1.4) {
-          console.log(`⏳ Upcoming: First stars at 0.7-1.4 Gyr`)
-        } else if (universeAgeGyr < 4.1) {
-          console.log(`🌟 Active: Cosmic noon (peak star formation)`)
-        } else if (universeAgeGyr < 10) {
-          console.log(`⏳ Upcoming: First red giants at ~10 Gyr`)
-        } else if (universeAgeGyr < 11) {
-          console.log(`🔴 Active: Red giant formation phase`)
-        } else if (universeAgeGyr < 12) {
-          console.log(`💥 Active: First supernovae! (neutron stars & black holes forming)`)
+        if (universeAgeGyr < 0.1) {
+          console.log(`🌑 Dark Ages: No stars yet (first stars form at ~100 Myr)`)
+        } else if (universeAgeGyr < 0.5) {
+          console.log(`✨ First Stars: Population III stars forming`)
+        } else if (universeAgeGyr < 3.0) {
+          console.log(`🌟 Cosmic Noon: Peak star formation era`)
+        } else if (universeAgeGyr < 9.2) {
+          console.log(`🌌 Galaxy Evolution: Continued star formation`)
+        } else if (universeAgeGyr < 10.0) {
+          console.log(`⏳ Approaching: First red giants at ~10 Gyr`)
+        } else if (universeAgeGyr < 11.0) {
+          console.log(`🔴 Red Giants: Oldest stars swelling and evolving`)
+        } else if (universeAgeGyr < 13.0) {
+          console.log(`💥 Supernovae Era: Compact objects forming`)
         } else if (universeAgeGyr < 13.8) {
-          console.log(`⚪ Active: White dwarf formation phase | 💥 Ongoing supernovae`)
+          console.log(`⚪ Late Universe: White dwarfs & ongoing supernovae`)
         } else {
-          console.log(`🎯 Reached: Present day (13.8 Gyr) | 💥 Active supernovae`)
+          console.log(`🎯 Present Day: Universe age matches reality (13.8 Gyr)`)
         }
         console.log('='.repeat(80) + '\n')
       }

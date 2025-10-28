@@ -76,14 +76,17 @@ void main() {
     // Check if gas particle meets star formation criteria
     if (particleType > 0.5 && particleType < 1.5) { // TYPE_GAS
         // Criteria:
-        // 1. High density (compressed gas cloud)
-        // 2. Appropriate temperature (not too cold, not too hot)
-        // 3. Stochastic element (probability-based)
+        // 1. Universe age > 100 Myr (first stars form after dark ages)
+        // 2. High density (compressed gas cloud)
+        // 3. Appropriate temperature (not too cold, not too hot)
+        // 4. Stochastic element (probability-based)
 
+        // First stars form at ~100 Myr = 4.35 sim seconds (time scale: 23 Myr/sec)
+        bool afterDarkAges = time > 4.35;
         bool highDensity = localDensity > formationDensity;
         bool rightTemperature = temperature >= formationTempMin && temperature <= formationTempMax;
 
-        if (highDensity && rightTemperature) {
+        if (afterDarkAges && highDensity && rightTemperature) {
             // Stochastic star formation (probability per frame)
             float rand = random(vUv);
 
