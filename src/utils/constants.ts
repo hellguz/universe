@@ -7,15 +7,15 @@ export const TEXTURE_SIZE = 1500 // 1500x1500 = 2.25 million particles
 export const PARTICLE_COUNT = TEXTURE_SIZE * TEXTURE_SIZE
 
 // Barnes-Hut Octree settings
-export const MASS_GRID_SIZE = 64 // 3D grid resolution for mass distribution (64³ = 262,144 cells)
+export const MASS_GRID_SIZE = 64 // 3D grid resolution for mass distribution (128³ = 2.1M cells)
 export const MASS_GRID_TEXTURE_SIZE = 512 // 2D texture size to store flattened 3D grid (8x8 layers of 64x64)
 export const MASS_GRID_WORLD_SIZE = 300.0 // World space size covered by mass grid (increased for larger spread)
 export const BARNES_HUT_THETA = 0.5 // Opening angle criterion (0.5 = good balance)
 
 // Distance thresholds for hierarchical approximation
-export const NEAR_FIELD_DISTANCE = 50.0 // Use individual particles
-export const MID_FIELD_DISTANCE = 100.0 // Use small clusters (fine mipmap levels)
-export const FAR_FIELD_DISTANCE = 200.0 // Use large clusters (coarse mipmap levels)
+export const NEAR_FIELD_DISTANCE = 30.0 // Use individual particles
+export const MID_FIELD_DISTANCE = 400.0 // Use small clusters (fine mipmap levels)
+export const FAR_FIELD_DISTANCE = 600.0 // Use large clusters (coarse mipmap levels)
 
 // Performance settings - Fixed Sample Budget (fallback if Barnes-Hut disabled)
 export const SAMPLES_PER_PARTICLE = 128 // Fixed computational budget per particle
@@ -24,17 +24,16 @@ export const GRAVITY_CUTOFF_DISTANCE = 80.0 // Only check nearby particles
 // Physics constants (scaled for simulation)
 export const GRAVITATIONAL_CONSTANT = 0.0001 // Scaled G for visible effects
 export const TIMESTEP = 0.016 // ~60fps
-
-export const SOFTENING_LENGTH = 2.5 // Prevent singularities (larger for more particles)
+export const SOFTENING_LENGTH = 25 // Prevent singularities (larger for more particles)
 
 // Initial conditions - Natural structure formation from density perturbations
-export const INITIAL_SPREAD = 90 // Spherical distribution radius (73% of world space) - comfortable margin from boundaries
+export const INITIAL_SPREAD = 110 // Spherical distribution radius (73% of world space) - comfortable margin from boundaries
 export const INITIAL_VELOCITY_SPREAD = 0.1 // Random velocity magnitude (small-scale motions)
 export const INITIAL_ROTATION_SPEED = 0.1 // No initial rotation (emerges naturally from gravitational collapse)
 export const TIDAL_ANGULAR_MOMENTUM = 0.02 // Tidal torque strength (~2% of velocity dispersion) - generates proto-galaxy spin
 
 // Rendering - optimized for high particle count
-export const PARTICLE_SIZE = 0.1
+export const PARTICLE_SIZE = 0.2
 export const PARTICLE_COLOR = [1.0, 1.0, 1.0] // White
 
 // Time controls
@@ -60,7 +59,7 @@ export const STAR_FORMATION_TEMP_MAX = 0.4 // Maximum temperature for star forma
 export const STAR_FORMATION_RATE = 0.00005 // Probability per frame (0.01% - continuous star formation throughout cosmic history, ~20-30% gas retention)
 
 // Stellar Evolution - Calibrated for realistic 10 Gyr main sequence lifetime
-export const STELLAR_AGING_RATE = 0.00011 // Stars reach red giant phase (0.7) at 10 Gyr universe age (434.78 sim seconds)
+export const STELLAR_AGING_RATE = 0.00111 // Stars reach red giant phase (0.7) at 10 Gyr universe age (434.78 sim seconds)
 export const RED_GIANT_AGE_THRESHOLD = 0.7 // Stars become red giants at this age (~10 Gyr in real time)
 export const WHITE_DWARF_AGE_THRESHOLD = 0.95 // Red giants become white dwarfs at this age (~11 Gyr in real time)
 
