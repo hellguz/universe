@@ -107,10 +107,46 @@ void main() {
         );
         // Very bright despite small size - concentrated energy
         baseAlpha *= 8.0; // Increased from 4.0 to compensate for tiny size
+    } else if (vType < 5.0) {
+        // Neutron Stars (type 4.0) - Supernova remnants, rapidly spinning
+        // Hot, dense, bright cyan-white color
+        float cooling = vTempOrAge; // 0.99 = fresh (supernova flash), lower = older
+
+        // Supernova flash: Pure white when just formed
+        if (cooling > 0.98) {
+            color = vec3(1.0, 1.0, 1.0); // BRIGHT WHITE FLASH!
+            baseAlpha *= 100.0; // MASSIVE EXPLOSION BRIGHTNESS!
+        } else {
+            // Normal neutron star: Bright cyan-white (hot, dense)
+            color = mix(
+                vec3(0.6, 1.0, 1.0),   // Bright cyan (hot neutron star)
+                vec3(0.8, 0.9, 1.0),   // Cooler blue-white
+                cooling
+            );
+            baseAlpha *= 10.0; // Very bright despite tiny size
+        }
+    } else if (vType < 6.0) {
+        // Black Holes (type 5.0) - Extreme gravity, accretion disk
+        // Deep purple/magenta representing gravitational distortion
+        float activity = vTempOrAge; // Activity level (accretion glow)
+
+        // Supernova flash: Pure white when just formed
+        if (activity > 0.98) {
+            color = vec3(1.0, 1.0, 1.0); // BRIGHT WHITE FLASH!
+            baseAlpha *= 100.0; // MASSIVE EXPLOSION BRIGHTNESS!
+        } else {
+            // Normal black hole: Deep purple with blue-magenta accretion glow
+            color = mix(
+                vec3(0.3, 0.0, 0.5),   // Deep purple (event horizon)
+                vec3(0.8, 0.2, 1.0),   // Bright magenta (hot accretion disk)
+                activity * 1.2 // Activity drives glow intensity
+            );
+            baseAlpha *= 12.0; // Very bright accretion glow
+        }
     } else {
-        // Future: Neutron stars (type 4.0) and Black holes (type 5.0)
-        color = vec3(1.0, 1.0, 1.0); // Placeholder white
-        baseAlpha *= 4.0; // Increased from 2.0
+        // Future: Other exotic objects
+        color = vec3(1.0, 1.0, 1.0);
+        baseAlpha *= 4.0;
     }
 
     // Output with type-specific alpha

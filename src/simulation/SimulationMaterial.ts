@@ -11,7 +11,9 @@ import {
   NEAR_FIELD_DISTANCE,
   MID_FIELD_DISTANCE,
   FAR_FIELD_DISTANCE,
-  SOFTENING_LENGTH
+  SOFTENING_LENGTH,
+  SUPERNOVA_RADIUS,
+  SUPERNOVA_VELOCITY_BOOST
 } from '../utils/constants'
 
 export function createVelocityMaterial(
@@ -41,7 +43,10 @@ export function createVelocityMaterial(
       nearFieldDist: { value: NEAR_FIELD_DISTANCE },
       midFieldDist: { value: MID_FIELD_DISTANCE },
       farFieldDist: { value: FAR_FIELD_DISTANCE },
-      softeningLength: { value: SOFTENING_LENGTH }
+      softeningLength: { value: SOFTENING_LENGTH },
+      // Supernova parameters
+      supernovaRadius: { value: SUPERNOVA_RADIUS },
+      supernovaVelocityBoost: { value: SUPERNOVA_VELOCITY_BOOST }
     },
     vertexShader: simulationVertexShader,
     fragmentShader

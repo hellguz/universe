@@ -16,6 +16,11 @@ uniform float formationTempMin; // Minimum temperature for star formation
 uniform float formationTempMax; // Maximum temperature for star formation
 uniform float formationRate; // Probability per frame
 
+// Supernova parameters
+uniform float supernovaAgeThreshold; // Age at which stars can go supernova
+uniform float supernovaProbability; // Chance a star goes supernova vs red giant
+uniform float blackHoleProbability; // Chance supernova creates black hole vs neutron star
+
 varying vec2 vUv;
 
 // Particle type constants
@@ -94,7 +99,7 @@ void main() {
     }
 
     // ===== STELLAR EVOLUTION: MAIN SEQUENCE → RED GIANT =====
-    // Check if this is a main sequence star that's old enough to become a red giant
+    // Check if this is a main sequence star that's old enough to evolve
     if (particleType >= 2.0 && particleType < 2.5) {
         // Main sequence star (type 2.0)
         // Check age (stored in velocity.w)
@@ -107,24 +112,44 @@ void main() {
         }
     }
 
-    // ===== STELLAR EVOLUTION: RED GIANT → WHITE DWARF =====
+    // ===== STELLAR EVOLUTION: RED GIANT → SUPERNOVA OR WHITE DWARF =====
     // Check if this is a red giant old enough to shed its outer layers
     else if (particleType >= 2.5 && particleType < 3.0) {
         // Red giant (type 2.5)
         float age = temperature; // Actually age for stars
 
-        // White dwarf threshold: age >= 0.95 (very ancient)
-        if (age >= 0.95) {
-            // Shed outer layers and become white dwarf!
+        // Supernova check: Some massive red giants explode at age 0.85
+        if (age >= supernovaAgeThreshold && age < 0.86) {
+            // Only check once when crossing threshold (0.85-0.86 range)
+            float rand1 = random(vUv + vec2(0.123, 0.456));
+
+            if (rand1 < supernovaProbability) {
+                // This star goes SUPERNOVA!
+                // Determine compact object type
+                float rand2 = random(vUv + vec2(0.789, 0.321));
+
+                if (rand2 < blackHoleProbability) {
+                    particleType = 5.0; // Black hole!
+                } else {
+                    particleType = 4.0; // Neutron star!
+                }
+                // Note: velocity.w will be reset to 0.99 in velocityStateFragment to trigger flash
+            }
+        }
+
+        // White dwarf threshold: age >= 0.95 (very ancient, didn't go supernova)
+        if (age >= 0.95 && particleType >= 2.5 && particleType < 3.0) {
+            // Shed outer layers and become white dwarf! (only if didn't just go supernova)
             particleType = 3.0; // White dwarf (compact object)
             // Note: Age will be reset to 0.0 in velocityStateFragment to represent fresh white dwarf
         }
     }
 
     // ===== FUTURE: MORE EVOLUTION =====
-    // TODO: Massive star → Supernova → Neutron Star/Black Hole
-    // TODO: Supernova explosions with shockwaves
+    // ✅ Supernova explosions → Neutron Stars/Black Holes (implemented!)
+    // TODO: Supernova shockwave propagation through gas
     // TODO: White dwarf accretion and nova events
+    // TODO: Binary systems and mergers
 
     // Output updated state
     gl_FragColor = vec4(position, particleType);

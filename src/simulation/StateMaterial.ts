@@ -11,7 +11,11 @@ import {
   STAR_FORMATION_TEMP_MAX,
   STAR_FORMATION_RATE,
   STELLAR_AGING_RATE,
-  GAS_COOLING_RATE
+  GAS_COOLING_RATE,
+  SUPERNOVA_AGE_THRESHOLD,
+  SUPERNOVA_PROBABILITY,
+  BLACK_HOLE_PROBABILITY,
+  BLACK_HOLE_ACCRETION_RADIUS
 } from '../utils/constants'
 
 export function createStateMaterial(
@@ -32,7 +36,10 @@ export function createStateMaterial(
       formationDensity: { value: STAR_FORMATION_DENSITY_THRESHOLD },
       formationTempMin: { value: STAR_FORMATION_TEMP_MIN },
       formationTempMax: { value: STAR_FORMATION_TEMP_MAX },
-      formationRate: { value: STAR_FORMATION_RATE }
+      formationRate: { value: STAR_FORMATION_RATE },
+      supernovaAgeThreshold: { value: SUPERNOVA_AGE_THRESHOLD },
+      supernovaProbability: { value: SUPERNOVA_PROBABILITY },
+      blackHoleProbability: { value: BLACK_HOLE_PROBABILITY }
     },
     vertexShader: simulationVertexShader,
     fragmentShader: stateFragmentShader
@@ -55,7 +62,9 @@ export function createVelocityStateMaterial(
       coolingRate: { value: GAS_COOLING_RATE },
       gridSize: { value: MASS_GRID_SIZE },
       worldSize: { value: MASS_GRID_WORLD_SIZE },
-      massTextureSize: { value: MASS_GRID_TEXTURE_SIZE }
+      massTextureSize: { value: MASS_GRID_TEXTURE_SIZE },
+      blackHoleAccretionRadius: { value: BLACK_HOLE_ACCRETION_RADIUS },
+      blackHoleAccretionHeating: { value: 0.002 } // Heating rate in accretion zone
     },
     vertexShader: simulationVertexShader,
     fragmentShader: velocityStateFragmentShader

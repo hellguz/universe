@@ -20,6 +20,10 @@ uniform float midFieldDist; // Use fine mipmaps (50.0)
 uniform float farFieldDist; // Use coarse mipmaps (100.0)
 uniform float softeningLength; // Prevent force singularities
 
+// Supernova parameters
+uniform float supernovaRadius; // Explosion blast radius
+uniform float supernovaVelocityBoost; // Ejecta speed multiplier
+
 varying vec2 vUv;
 
 // Convert world position to grid coordinates
@@ -82,7 +86,10 @@ void main() {
             if (distance(otherUv, vUv) < texelSize * 2.0) continue; // Skip self
 
             vec4 otherPosData = texture2D(positionTexture, otherUv);
+            vec4 otherVelData = texture2D(velocityTexture, otherUv);
             vec3 otherPos = otherPosData.xyz;
+            float otherType = otherPosData.w;
+            float otherTempOrAge = otherVelData.w;
 
             vec3 diff = otherPos - position;
             float dist = length(diff);
@@ -98,6 +105,23 @@ void main() {
             float forceMag = G * representedMass / (dist * dist);
 
             acceleration += normalize(diff) * forceMag;
+
+            // ===== SUPERNOVA EXPLOSIVE VELOCITY =====
+            // Detect fresh compact objects (neutron stars or black holes just formed)
+            bool isSupernovaFlash = (otherType >= 4.0 && otherType < 6.0) && otherTempOrAge > 0.98;
+
+            if (isSupernovaFlash && dist < supernovaRadius) {
+                // Apply radial outward velocity boost
+                // Stronger closer to supernova (inverse distance)
+                vec3 explosionDir = normalize(position - otherPos); // Away from supernova
+                float distanceFactor = 1.0 - (dist / supernovaRadius); // 1.0 at center, 0.0 at edge
+                distanceFactor = pow(distanceFactor, 0.5); // Square root for more gentle falloff
+
+                // MASSIVE explosion force! Scale with represented mass for dramatic effect
+                float explosionStrength = supernovaVelocityBoost * distanceFactor * representedMass * 2.0;
+
+                velocity += explosionDir * explosionStrength;
+            }
         }
     }
 

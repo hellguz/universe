@@ -25,6 +25,8 @@ interface SimulationState {
   mainSequenceCount: number
   redGiantCount: number
   whiteDwarfCount: number
+  neutronStarCount: number
+  blackHoleCount: number
 
   // Actions
   togglePlay: () => void
@@ -36,7 +38,7 @@ interface SimulationState {
   toggleBarnesHut: () => void
   reset: () => void
   setParticleCounts: (darkMatter: number, gas: number, stars: number) => void
-  setStellarCounts: (mainSequence: number, redGiant: number, whiteDwarf: number) => void
+  setStellarCounts: (mainSequence: number, redGiant: number, whiteDwarf: number, neutronStar: number, blackHole: number) => void
 }
 
 export const useSimulationStore = create<SimulationState>((set) => ({
@@ -60,6 +62,8 @@ export const useSimulationStore = create<SimulationState>((set) => ({
   mainSequenceCount: Math.floor(PARTICLE_COUNT * 0.05), // All initial stars are main sequence
   redGiantCount: 0,
   whiteDwarfCount: 0,
+  neutronStarCount: 0,
+  blackHoleCount: 0,
 
   // Actions
   togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
@@ -80,10 +84,12 @@ export const useSimulationStore = create<SimulationState>((set) => ({
     starCount: stars
   }),
 
-  setStellarCounts: (mainSequence: number, redGiant: number, whiteDwarf: number) => set({
+  setStellarCounts: (mainSequence: number, redGiant: number, whiteDwarf: number, neutronStar: number, blackHole: number) => set({
     mainSequenceCount: mainSequence,
     redGiantCount: redGiant,
-    whiteDwarfCount: whiteDwarf
+    whiteDwarfCount: whiteDwarf,
+    neutronStarCount: neutronStar,
+    blackHoleCount: blackHole
   }),
 
   toggleBarnesHut: () => set((state) => ({
@@ -108,6 +114,8 @@ export const useSimulationStore = create<SimulationState>((set) => ({
     starCount: Math.floor(PARTICLE_COUNT * 0.05),
     mainSequenceCount: Math.floor(PARTICLE_COUNT * 0.05),
     redGiantCount: 0,
-    whiteDwarfCount: 0
+    whiteDwarfCount: 0,
+    neutronStarCount: 0,
+    blackHoleCount: 0
   }))
 }))

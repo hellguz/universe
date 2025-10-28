@@ -423,6 +423,8 @@ export default function ParticleSystem() {
           let mainSequence = 0
           let redGiant = 0
           let whiteDwarf = 0
+          let neutronStar = 0
+          let blackHole = 0
           let totalStarsSampled = 0
           let maxAge = 0
           let minAge = 1.0
@@ -447,6 +449,12 @@ export default function ParticleSystem() {
               ageSum += age
             } else if (type >= 3.0 && type < 4.0) {
               whiteDwarf++
+              totalStarsSampled++
+            } else if (type >= 4.0 && type < 5.0) {
+              neutronStar++
+              totalStarsSampled++
+            } else if (type >= 5.0 && type < 6.0) {
+              blackHole++
               totalStarsSampled++
             }
           }
@@ -474,8 +482,10 @@ export default function ParticleSystem() {
             const mainSeqCount = Math.round(mainSequence * ratio)
             const redGiantCount = Math.round(redGiant * ratio)
             const whiteDwarfCount = Math.round(whiteDwarf * ratio)
+            const neutronStarCount = Math.round(neutronStar * ratio)
+            const blackHoleCount = Math.round(blackHole * ratio)
 
-            setStellarCounts(mainSeqCount, redGiantCount, whiteDwarfCount)
+            setStellarCounts(mainSeqCount, redGiantCount, whiteDwarfCount, neutronStarCount, blackHoleCount)
 
             // Store stellar data for unified report
             const avgAge = ageSum / totalStarsSampled
@@ -483,17 +493,21 @@ export default function ParticleSystem() {
               mainSequence: mainSeqCount,
               redGiants: redGiantCount,
               whiteDwarfs: whiteDwarfCount,
+              neutronStars: neutronStarCount,
+              blackHoles: blackHoleCount,
               maxAge,
               avgAge,
               minAge
             }
           } else {
             // No stars in sample, assume all main sequence
-            setStellarCounts(stars, 0, 0)
+            setStellarCounts(stars, 0, 0, 0, 0)
             diagnosticData.current.stellarStats = {
               mainSequence: stars,
               redGiants: 0,
               whiteDwarfs: 0,
+              neutronStars: 0,
+              blackHoles: 0,
               maxAge: 0,
               avgAge: 0,
               minAge: 0
@@ -513,11 +527,11 @@ export default function ParticleSystem() {
         } catch (error) {
           // ReadPixels failed, fall back to default
           console.warn('Failed to count stellar types:', error)
-          setStellarCounts(stars, 0, 0)
+          setStellarCounts(stars, 0, 0, 0, 0)
         }
       } else {
-        setStellarCounts(0, 0, 0)
-        diagnosticData.current.stellarStats = { mainSequence: 0, redGiants: 0, whiteDwarfs: 0, maxAge: 0, avgAge: 0, minAge: 0 }
+        setStellarCounts(0, 0, 0, 0, 0)
+        diagnosticData.current.stellarStats = { mainSequence: 0, redGiants: 0, whiteDwarfs: 0, neutronStars: 0, blackHoles: 0, maxAge: 0, avgAge: 0, minAge: 0 }
         diagnosticData.current.gasStats = { coldGas: 0, warmGas: 0, hotGas: 0, coldPercent: 0, warmPercent: 0, hotPercent: 0 }
       }
     }
@@ -562,12 +576,14 @@ export default function ParticleSystem() {
         console.log(`⚬ Main Sequence:  ${ss.mainSequence.toLocaleString().padStart(12)} (${((ss.mainSequence / pc.stars) * 100).toFixed(1)}%) - Blue/Yellow stars`)
         console.log(`⚬ Red Giants:     ${ss.redGiants.toLocaleString().padStart(12)} (${((ss.redGiants / pc.stars) * 100).toFixed(1)}%) - Evolved, swollen`)
         console.log(`⚬ White Dwarfs:   ${ss.whiteDwarfs.toLocaleString().padStart(12)} (${((ss.whiteDwarfs / pc.stars) * 100).toFixed(1)}%) - Compact remnants`)
+        console.log(`⚬ Neutron Stars:  ${ss.neutronStars.toLocaleString().padStart(12)} (${((ss.neutronStars / pc.stars) * 100).toFixed(1)}%) - Supernova remnants`)
+        console.log(`⚬ Black Holes:    ${ss.blackHoles.toLocaleString().padStart(12)} (${((ss.blackHoles / pc.stars) * 100).toFixed(1)}%) - Extreme gravity`)
         console.log('')
         console.log('━━━ STELLAR AGING ━━━')
-        console.log(`📈 Max Age:  ${ss.maxAge.toFixed(4)} ${ss.maxAge < 0.7 ? `(${((ss.maxAge / 0.7) * 100).toFixed(1)}% to red giant)` : '(RED GIANT!)'}`)
+        console.log(`📈 Max Age:  ${ss.maxAge.toFixed(4)} ${ss.maxAge < 0.7 ? `(${((ss.maxAge / 0.7) * 100).toFixed(1)}% to red giant)` : ss.maxAge < 0.85 ? '(RED GIANT!)' : '(SUPERNOVA AGE!)'}`)
         console.log(`📊 Avg Age:  ${ss.avgAge.toFixed(4)}`)
         console.log(`📉 Min Age:  ${ss.minAge.toFixed(4)}`)
-        console.log(`🎯 Thresholds: 0.700 → Red Giant | 0.950 → White Dwarf`)
+        console.log(`🎯 Thresholds: 0.700 → Red Giant | 0.850 → Supernova | 0.950 → White Dwarf`)
         console.log('')
         console.log('━━━ EXPECTED MILESTONES ━━━')
         if (universeAgeGyr < 1.4) {
@@ -578,10 +594,12 @@ export default function ParticleSystem() {
           console.log(`⏳ Upcoming: First red giants at ~10 Gyr`)
         } else if (universeAgeGyr < 11) {
           console.log(`🔴 Active: Red giant formation phase`)
+        } else if (universeAgeGyr < 12) {
+          console.log(`💥 Active: First supernovae! (neutron stars & black holes forming)`)
         } else if (universeAgeGyr < 13.8) {
-          console.log(`⚪ Active: White dwarf formation phase`)
+          console.log(`⚪ Active: White dwarf formation phase | 💥 Ongoing supernovae`)
         } else {
-          console.log(`🎯 Reached: Present day (13.8 Gyr)`)
+          console.log(`🎯 Reached: Present day (13.8 Gyr) | 💥 Active supernovae`)
         }
         console.log('='.repeat(80) + '\n')
       }

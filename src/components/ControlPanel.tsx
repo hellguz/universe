@@ -15,6 +15,8 @@ export default function ControlPanel() {
     mainSequenceCount,
     redGiantCount,
     whiteDwarfCount,
+    neutronStarCount,
+    blackHoleCount,
     togglePlay,
     setTimeScale,
     setGravitationalConstant,
@@ -86,9 +88,17 @@ export default function ControlPanel() {
             <span style={{ color: 'rgba(255, 120, 40, 1)' }}>⚬ Red Giants:</span>
             <span>{redGiantCount.toLocaleString()}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
             <span style={{ color: 'rgba(220, 230, 255, 1)' }}>⚬ White Dwarfs:</span>
             <span>{whiteDwarfCount.toLocaleString()}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+            <span style={{ color: 'rgba(100, 220, 255, 1)' }}>⚬ Neutron Stars:</span>
+            <span>{neutronStarCount.toLocaleString()}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: 'rgba(200, 100, 255, 1)' }}>⚬ Black Holes:</span>
+            <span>{blackHoleCount.toLocaleString()}</span>
           </div>
         </div>
       </div>

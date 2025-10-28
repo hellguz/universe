@@ -28,6 +28,13 @@ void main() {
 
     // Particle size variation based on type
     float typeScale = 1.0;
+
+    // Supernova flash: Extremely bright when tempOrAge is at 0.99 (just formed)
+    bool supernovaFlash = false;
+    if ((particleType >= 4.0 && particleType < 6.0) && tempOrAge > 0.98) {
+        supernovaFlash = true;
+    }
+
     if (particleType < 0.5) {
         typeScale = 0.7; // Dark matter: smaller, dimmer
     } else if (particleType < 1.5) {
@@ -38,8 +45,15 @@ void main() {
         typeScale = 4.5; // Red giants: HUGE (4.5x larger than main sequence)
     } else if (particleType < 4.0) {
         typeScale = 0.5; // White dwarfs: TINY (Earth-sized objects, very compact)
-    } else {
-        typeScale = 0.3; // Neutron stars/black holes: extremely small (future)
+    } else if (particleType < 5.0) {
+        typeScale = 0.3; // Neutron stars: extremely small, dense
+    } else if (particleType < 6.0) {
+        typeScale = 0.2; // Black holes: even tinier (event horizon)
+    }
+
+    // SUPERNOVA FLASH: Temporarily huge during formation!
+    if (supernovaFlash) {
+        typeScale *= 200.0; // 200x size explosion flash - MASSIVE AND DRAMATIC!
     }
 
     // Particle size based on distance (perspective scaling)

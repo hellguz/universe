@@ -3,7 +3,7 @@
  */
 
 // Simulation settings
-export const TEXTURE_SIZE = 1700 // 1700x1700 = 2.89 million particles
+export const TEXTURE_SIZE = 1500 // 1500x1500 = 2.25 million particles
 export const PARTICLE_COUNT = TEXTURE_SIZE * TEXTURE_SIZE
 
 // Barnes-Hut Octree settings
@@ -24,10 +24,10 @@ export const GRAVITY_CUTOFF_DISTANCE = 80.0 // Only check nearby particles
 // Physics constants (scaled for simulation)
 export const GRAVITATIONAL_CONSTANT = 0.0001 // Scaled G for visible effects
 export const TIMESTEP = 0.016 // ~60fps
-export const SOFTENING_LENGTH = 8 // Prevent singularities (larger for more particles)
+export const SOFTENING_LENGTH = 6 // Prevent singularities (larger for more particles)
 
 // Initial conditions
-export const INITIAL_SPREAD = 70 // Sphere radius for initial distribution (larger for more particles)
+export const INITIAL_SPREAD = 80 // Sphere radius for initial distribution (larger for more particles)
 export const INITIAL_VELOCITY_SPREAD = 0.05 // Random velocity magnitude (reduced for stability)
 export const INITIAL_ROTATION_SPEED = 0.08 // Base rotation speed for galaxy (angular momentum conservation)
 
@@ -61,7 +61,15 @@ export const STAR_FORMATION_RATE = 0.005 // Probability per frame (0.5% - builds
 export const STELLAR_AGING_RATE = 0.001 // Stars reach red giant phase (0.7) after ~730 sim seconds (16.8 Gyr of universe time)
 export const RED_GIANT_AGE_THRESHOLD = 0.7 // Stars become red giants at this age (~10 Gyr in real time)
 export const WHITE_DWARF_AGE_THRESHOLD = 0.95 // Red giants become white dwarfs at this age (~11 Gyr in real time)
-export const SUPERNOVA_AGE_THRESHOLD = 0.85 // Massive stars explode at this age (future feature)
+
+// Supernova & Compact Objects
+export const SUPERNOVA_AGE_THRESHOLD = 0.85 // Massive stars explode at this age (~8-9 Gyr)
+export const SUPERNOVA_RADIUS = 30.0 // Explosion blast radius (world units) - DOUBLED for dramatic effect!
+export const SUPERNOVA_VELOCITY_BOOST = 50.0 // Ejecta speed multiplier - MASSIVE shockwave!
+export const SUPERNOVA_PROBABILITY = 0.15 // 15% of stars go supernova (rest become red giants)
+export const BLACK_HOLE_PROBABILITY = 0.5 // 50% of supernovae create black holes, 50% neutron stars
+export const BLACK_HOLE_ACCRETION_RADIUS = 5.0 // Gas heating zone around black holes
+export const BLACK_HOLE_GRAVITY_MULTIPLIER = 3.0 // Enhanced gravitational pull
 
 // Gas Evolution - Very fast early cooling for visible star formation
 export const GAS_COOLING_RATE = 0.002 // Hot gas (0.6) cools to cold (0.3) in ~4 seconds (rapid cooling)

@@ -11,6 +11,8 @@ uniform float coolingRate; // Gas cooling rate per frame
 uniform float gridSize; // Mass grid size (64)
 uniform float worldSize; // World space size (300)
 uniform float massTextureSize; // Mass texture size (512)
+uniform float blackHoleAccretionRadius; // Gas heating zone around black holes
+uniform float blackHoleAccretionHeating; // Heating rate in accretion zone
 
 varying vec2 vUv;
 
@@ -75,6 +77,39 @@ void main() {
         } else {
             // White dwarfs cool slowly over time
             tempOrAge = min(tempOrAge + agingRate * delta * 0.1, 0.99); // Cool 10x slower than stars age
+        }
+    }
+    // ===== NEUTRON STAR FORMATION =====
+    else if (particleType >= 4.0 && particleType < 5.0) {
+        // Neutron star (type 4.0): Supernova remnant
+        // velocity.w stores cooling/age since formation
+        if (tempOrAge >= 0.84 && tempOrAge < 0.87) {
+            // Newly formed from supernova (inherited parent age ~0.85) - trigger bright flash ONCE!
+            // Set to high value for flash, but will immediately cool to 0.8 next frame
+            tempOrAge = 0.99; // Maximum brightness for visual flash
+        } else if (tempOrAge > 0.98) {
+            // Just finished flashing - cool down quickly to exit trigger range
+            tempOrAge = 0.8; // Drop below trigger threshold to prevent re-flash
+        } else {
+            // Normal cooling - neutron stars cool over time
+            tempOrAge = max(tempOrAge - agingRate * delta * 1.0, 0.1); // Cool down from 0.8 → 0.1
+        }
+    }
+    // ===== BLACK HOLE FORMATION & ACCRETION =====
+    else if (particleType >= 5.0 && particleType < 6.0) {
+        // Black hole (type 5.0): Supernova remnant with extreme gravity
+        // velocity.w stores "activity" level (accretion state)
+        if (tempOrAge >= 0.84 && tempOrAge < 0.87) {
+            // Newly formed from supernova (inherited parent age ~0.85) - trigger bright flash ONCE!
+            // Set to high value for flash, but will immediately cool to 0.83 next frame
+            tempOrAge = 0.99; // Maximum brightness for visual flash
+        } else if (tempOrAge > 0.98) {
+            // Just finished flashing - cool down quickly to exit trigger range
+            tempOrAge = 0.83; // Drop below trigger threshold to prevent re-flash, but keep high
+        } else {
+            // Black holes maintain high activity from accretion
+            // Cool slowly from initial flash, but maintain minimum glow
+            tempOrAge = max(tempOrAge - agingRate * delta * 0.2, 0.75); // Slow cooling, high floor for glow
         }
     }
     // ===== GAS COOLING & STELLAR FEEDBACK HEATING =====
