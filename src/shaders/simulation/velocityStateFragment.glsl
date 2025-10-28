@@ -67,16 +67,19 @@ void main() {
             // Newly formed star (type 2.001) - initialize age to 0.0
             // This star just converted from gas and inherited gas temperature
             tempOrAge = 0.0;
+
+            // MASS ASSIGNMENT happens in next stateFragment pass when age is initialized
+            // (Can't do it here because we can't modify particleType in velocityStateFragment)
         } else {
             // Mass-dependent aging: Massive stars age MUCH faster (shorter lifetimes)
             float agingMultiplier = 1.0;
 
-            // Massive stars (2.002) and massive red giants (2.502) age 5x faster
+            // Massive stars (2.002), massive red giants (2.502), and failed supernovae (2.503) age 5x faster
             // Realistic: Massive stars live ~10-20 Myr, normal stars live ~10 Gyr
             if (particleType > 2.001 && particleType < 2.003) {
                 agingMultiplier = 5.0; // Massive main sequence stars
-            } else if (particleType > 2.501) {
-                agingMultiplier = 5.0; // Massive red giants
+            } else if (particleType > 2.501 && particleType < 2.51) {
+                agingMultiplier = 5.0; // Massive red giants (both explosive and non-explosive)
             }
 
             // Apply age increase with mass-dependent rate

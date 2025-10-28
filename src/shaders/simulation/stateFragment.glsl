@@ -113,21 +113,25 @@ void main() {
     }
 
     // ===== NEWLY FORMED STAR → MAIN SEQUENCE (with mass assignment) =====
-    // Transition newly formed stars (2.001) to main sequence with realistic mass distribution
-    // Realistic: Only ~1% of stars are massive enough (>8 M☉) to go supernova
+    // Assign mass to stars that have been age-initialized by velocityStateFragment
+    // Type 2.001 stars with age ~0.0 (not gas temp 0.1-0.4) are ready for mass assignment
     if (particleType > 2.0 && particleType < 2.01) {
-        // Assign stellar mass class based on Initial Mass Function (IMF)
-        // Use position-based random for ONE-TIME decision (mass is assigned at birth)
-        float massRoll = randomOnce(vUv + vec2(0.567, 0.234)); // Unique seed for mass assignment
+        // Check if age has been initialized (age should be ~0, not gas temp range)
+        // If age <= 0.01, it's been initialized. If age > 0.01, it's still gas temp - wait one more frame
+        if (temperature <= 0.01) {
+            // Age initialized! Assign stellar mass class based on Initial Mass Function (IMF)
+            // Use position-based random for ONE-TIME decision (mass is assigned at birth)
+            float massRoll = randomOnce(vUv + vec2(0.567, 0.234));
 
-        if (massRoll < 0.01) {
-            // Massive star (>8 M☉) - RARE! Only 1% of stars
-            // These will age faster and can go supernova
-            particleType = 2.002;
-        } else {
-            // Normal/low-mass star (0.1-8 M☉) - 99% of stars
-            // These age slowly and become white dwarfs
-            particleType = 2.0;
+            if (massRoll < 0.01) {
+                // Massive star (>8 M☉) - RARE! Only 1% of stars
+                // These will age faster and can go supernova
+                particleType = 2.002;
+            } else {
+                // Normal/low-mass star (0.1-8 M☉) - 99% of stars
+                // These age slowly and become white dwarfs
+                particleType = 2.0;
+            }
         }
     }
 
@@ -155,12 +159,13 @@ void main() {
     else if (particleType >= 2.5 && particleType < 3.0) {
         float age = temperature; // Actually age for stars
 
-        // MASSIVE RED GIANTS (2.502) → SUPERNOVA
+        // MASSIVE RED GIANTS (2.502) → SUPERNOVA OR FAILED SUPERNOVA
         // Only massive stars (>8 M☉) can go supernova!
-        if (particleType > 2.501) {
-            // Massive red giant - will explode as supernova at age 0.85
+        if (particleType > 2.501 && particleType < 2.503) {
+            // Massive red giant - check for supernova at age 0.85
+            // Widened window to 0.85-0.93 to catch fast-aging massive stars
             // Use position-based random for ONE-TIME decision (prevents multiple rolls)
-            if (age >= supernovaAgeThreshold && age < 0.86) {
+            if (age >= supernovaAgeThreshold && age < 0.93) {
                 // Check supernova probability (only once per massive star)
                 float rand1 = randomOnce(vUv + vec2(0.123, 0.456));
 
@@ -175,12 +180,16 @@ void main() {
                         particleType = 4.0; // Neutron star!
                     }
                     // Note: velocity.w will be reset to 0.99 in velocityStateFragment to trigger flash
+                } else {
+                    // Failed supernova - mark as "won't explode" to prevent re-checking
+                    // Type 2.503 = massive red giant that will become white dwarf (no supernova)
+                    particleType = 2.503;
                 }
             }
         }
 
-        // NORMAL RED GIANTS (2.5) → WHITE DWARF
-        // Normal stars cannot go supernova - they always become white dwarfs
+        // NORMAL RED GIANTS (2.5) & FAILED SUPERNOVA MASSIVE STARS (2.503) → WHITE DWARF
+        // Normal stars and massive stars that didn't explode become white dwarfs
         // White dwarf threshold: age >= 0.95 (very ancient)
         if (age >= 0.95 && particleType >= 2.5 && particleType < 3.0) {
             // Shed outer layers and become white dwarf!
