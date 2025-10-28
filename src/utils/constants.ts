@@ -59,7 +59,7 @@ export const STAR_FORMATION_TEMP_MAX = 0.4 // Maximum temperature for star forma
 export const STAR_FORMATION_RATE = 0.00005 // Probability per frame (0.01% - continuous star formation throughout cosmic history, ~20-30% gas retention)
 
 // Stellar Evolution - Calibrated for realistic 10 Gyr main sequence lifetime
-export const STELLAR_AGING_RATE = 0.00111 // Stars reach red giant phase (0.7) at 10 Gyr universe age (434.78 sim seconds)
+export const STELLAR_AGING_RATE = 0.001 // Stars reach red giant phase (0.7) at 10 Gyr universe age (434.78 sim seconds)
 export const RED_GIANT_AGE_THRESHOLD = 0.7 // Stars become red giants at this age (~10 Gyr in real time)
 export const WHITE_DWARF_AGE_THRESHOLD = 0.95 // Red giants become white dwarfs at this age (~11 Gyr in real time)
 
