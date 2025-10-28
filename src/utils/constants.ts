@@ -13,8 +13,8 @@ export const MASS_GRID_WORLD_SIZE = 300.0 // World space size covered by mass gr
 export const BARNES_HUT_THETA = 0.5 // Opening angle criterion (0.5 = good balance)
 
 // Distance thresholds for hierarchical approximation
-export const NEAR_FIELD_DISTANCE = 60.0 // Use individual particles
-export const MID_FIELD_DISTANCE = 200.0 // Use small clusters (fine mipmap levels)
+export const NEAR_FIELD_DISTANCE = 30.0 // Use individual particles
+export const MID_FIELD_DISTANCE = 400.0 // Use small clusters (fine mipmap levels)
 export const FAR_FIELD_DISTANCE = 600.0 // Use large clusters (coarse mipmap levels)
 
 // Performance settings - Fixed Sample Budget (fallback if Barnes-Hut disabled)
@@ -24,7 +24,7 @@ export const GRAVITY_CUTOFF_DISTANCE = 80.0 // Only check nearby particles
 // Physics constants (scaled for simulation)
 export const GRAVITATIONAL_CONSTANT = 0.0001 // Scaled G for visible effects
 export const TIMESTEP = 0.016 // ~60fps
-export const SOFTENING_LENGTH = 14 // Prevent singularities (larger for more particles)
+export const SOFTENING_LENGTH = 25 // Prevent singularities (larger for more particles)
 
 // Initial conditions - Natural structure formation from density perturbations
 export const INITIAL_SPREAD = 110 // Spherical distribution radius (73% of world space) - comfortable margin from boundaries

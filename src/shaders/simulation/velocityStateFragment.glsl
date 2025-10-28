@@ -101,6 +101,27 @@ void main() {
     ageOrTemp += agingRate * delta;
   }
 
+  // --- 3. SUPERNOVA FLASH INITIALIZATION ---
+  // When a red giant just became a compact object (neutron star or black hole),
+  // initialize its age to 0.99 to trigger the visual flash effect.
+  // The flash is rendered when age > 0.98 (see render shaders).
+  if (type >= 4.0 && type < 6.0) {
+    // Type 4.0 = Neutron Star, Type 5.0 = Black Hole
+
+    // Check if this is a freshly formed compact object
+    // Red giants go supernova at age ~0.83-0.87 (around SUPERNOVA_AGE_THRESHOLD = 0.85)
+    if (ageOrTemp >= 0.83 && ageOrTemp < 0.88) {
+      // SUPERNOVA FLASH! Set to 0.99 to trigger bright flash
+      ageOrTemp = 0.99;
+    } else if (ageOrTemp > 0.88) {
+      // Cool down from flash - must jump past trigger range to avoid infinite loop
+      float cooled = ageOrTemp - (coolingRate * delta * 30.0);
+      // Once cooling would bring us back to trigger range, jump to safe value
+      ageOrTemp = (cooled <= 0.88) ? 0.70 : cooled;
+    }
+    // If ageOrTemp <= 0.83, it's already fully cooled - leave it alone
+  }
+
   // Output: vel.xyz is unchanged, vel.w is updated age/temp
   gl_FragColor = vec4(vel.xyz, ageOrTemp);
 }
