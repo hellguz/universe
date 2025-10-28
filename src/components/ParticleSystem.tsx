@@ -423,7 +423,9 @@ export default function ParticleSystem() {
           gl.setRenderTarget(null)
 
           let mainSequence = 0
+          let massiveMainSequence = 0 // Track massive stars (type 2.002)
           let redGiant = 0
+          let massiveRedGiant = 0 // Track massive red giants (type 2.502/2.503)
           let whiteDwarf = 0
           let neutronStar = 0
           let blackHole = 0
@@ -432,6 +434,7 @@ export default function ParticleSystem() {
           let maxAge = 0
           let minAge = 1.0
           let ageSum = 0
+          let massiveMaxAge = 0 // Track max age of massive stars specifically
 
           // Count sampled stellar types and track ages
           for (let i = 0; i < posBuffer.length; i += 4) {
@@ -439,6 +442,13 @@ export default function ParticleSystem() {
             const age = velBuffer[i + 3] // w component has age for stars
 
             if (type >= 2.0 && type < 2.5) {
+              // Check if massive star (2.001 < type < 2.003)
+              if (type > 2.001 && type < 2.003) {
+                massiveMainSequence++
+                if (age >= 0.0) {
+                  massiveMaxAge = Math.max(massiveMaxAge, age)
+                }
+              }
               mainSequence++
               totalStarsSampled++
               // Track age only if valid (not marker value -1.0)
@@ -449,6 +459,13 @@ export default function ParticleSystem() {
                 ageSum += age
               }
             } else if (type >= 2.5 && type < 3.0) {
+              // Check if massive red giant (2.501 < type < 2.51)
+              if (type > 2.501 && type < 2.51) {
+                massiveRedGiant++
+                if (age >= 0.0) {
+                  massiveMaxAge = Math.max(massiveMaxAge, age)
+                }
+              }
               redGiant++
               totalStarsSampled++
               // Track age only if valid (not marker value -1.0)
@@ -494,7 +511,9 @@ export default function ParticleSystem() {
           if (totalStarsSampled > 0) {
             const ratio = stars / totalStarsSampled
             const mainSeqCount = Math.round(mainSequence * ratio)
+            const massiveMainSeqCount = Math.round(massiveMainSequence * ratio)
             const redGiantCount = Math.round(redGiant * ratio)
+            const massiveRedGiantCount = Math.round(massiveRedGiant * ratio)
             const whiteDwarfCount = Math.round(whiteDwarf * ratio)
             const neutronStarCount = Math.round(neutronStar * ratio)
             const blackHoleCount = Math.round(blackHole * ratio)
@@ -505,26 +524,32 @@ export default function ParticleSystem() {
             const avgAge = agingStarsSampled > 0 ? ageSum / agingStarsSampled : 0
             diagnosticData.current.stellarStats = {
               mainSequence: mainSeqCount,
+              massiveMainSequence: massiveMainSeqCount,
               redGiants: redGiantCount,
+              massiveRedGiants: massiveRedGiantCount,
               whiteDwarfs: whiteDwarfCount,
               neutronStars: neutronStarCount,
               blackHoles: blackHoleCount,
               maxAge,
               avgAge,
-              minAge
+              minAge,
+              massiveMaxAge
             }
           } else {
             // No stars in sample, assume all main sequence
             setStellarCounts(stars, 0, 0, 0, 0)
             diagnosticData.current.stellarStats = {
               mainSequence: stars,
+              massiveMainSequence: 0,
               redGiants: 0,
+              massiveRedGiants: 0,
               whiteDwarfs: 0,
               neutronStars: 0,
               blackHoles: 0,
               maxAge: 0,
               avgAge: 0,
-              minAge: 0
+              minAge: 0,
+              massiveMaxAge: 0
             }
           }
 
@@ -550,9 +575,9 @@ export default function ParticleSystem() {
       }
     }
 
-    // ===== UNIFIED STATUS REPORT (every 20 simulation seconds) =====
+    // ===== UNIFIED STATUS REPORT (every 60 real seconds = 1 minute) =====
     // Time-based reporting is more reliable than frame-based (handles variable frame rates, HMR, pauses)
-    if (simulationTime.current - lastReportTime.current >= 20.0 && simulationTime.current > 0) {
+    if (simulationTime.current - lastReportTime.current >= 60.0 && simulationTime.current > 0) {
       const universeAgeGyr = (simulationTime.current * UNIVERSE_TIME_SCALE) / 1000
       const pc = diagnosticData.current.particleCounts
       const ss = diagnosticData.current.stellarStats
@@ -592,6 +617,11 @@ export default function ParticleSystem() {
         console.log(`⚬ White Dwarfs:   ${ss.whiteDwarfs.toLocaleString().padStart(12)} (${((ss.whiteDwarfs / pc.stars) * 100).toFixed(1)}%) - Compact remnants`)
         console.log(`⚬ Neutron Stars:  ${ss.neutronStars.toLocaleString().padStart(12)} (${((ss.neutronStars / pc.stars) * 100).toFixed(1)}%) - Supernova remnants`)
         console.log(`⚬ Black Holes:    ${ss.blackHoles.toLocaleString().padStart(12)} (${((ss.blackHoles / pc.stars) * 100).toFixed(1)}%) - Extreme gravity`)
+        console.log('')
+        console.log('━━━ MASSIVE STAR TRACKING (DEBUG) ━━━')
+        console.log(`🔵 Massive Main:  ${ss.massiveMainSequence.toLocaleString().padStart(12)} (${((ss.massiveMainSequence / pc.stars) * 100).toFixed(1)}% of all stars) - Type 2.002`)
+        console.log(`🔴 Massive Giants:${ss.massiveRedGiants.toLocaleString().padStart(12)} (${((ss.massiveRedGiants / pc.stars) * 100).toFixed(1)}% of all stars) - Type 2.502+`)
+        console.log(`⏱️  Massive Max Age: ${ss.massiveMaxAge.toFixed(4)} ${ss.massiveMaxAge >= 0.85 ? '(SHOULD GO SUPERNOVA!)' : ss.massiveMaxAge >= 0.7 ? '(Massive Red Giant)' : '(Massive Main Seq)'}`)
         console.log('')
         console.log('━━━ STELLAR AGING ━━━')
         console.log(`📈 Max Age:  ${ss.maxAge.toFixed(4)} ${ss.maxAge < 0.7 ? `(${((ss.maxAge / 0.7) * 100).toFixed(1)}% to red giant)` : ss.maxAge < 0.85 ? '(RED GIANT!)' : '(SUPERNOVA AGE!)'}`)

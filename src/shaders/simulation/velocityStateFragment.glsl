@@ -1,163 +1,106 @@
-// Velocity state update shader - updates temperature/age when particle type changes
-// Companion to stateFragment.glsl, updates velocity/temperature/age data
+// AGING & TEMPERATURE SHADER
+// Updates particle velocity.w (Age/Temperature)
+// - Cools hot gas
+// - Ages stars
+// - Heats gas near black holes
 
-uniform sampler2D positionTexture; // Read updated particle types
-uniform sampler2D velocityTexture; // Read current velocity/temperature/age
-uniform sampler2D massTexture; // Hierarchical mass distribution for stellar feedback
+uniform sampler2D positionTexture;
+uniform sampler2D velocityTexture;
+uniform sampler2D massTexture; // For locating black holes
+
 uniform float time;
 uniform float delta;
-uniform float agingRate; // Stellar aging rate per frame
-uniform float coolingRate; // Gas cooling rate per frame
-uniform float gridSize; // Mass grid size (64)
-uniform float worldSize; // World space size (300)
-uniform float massTextureSize; // Mass texture size (512)
-uniform float blackHoleAccretionRadius; // Gas heating zone around black holes
-uniform float blackHoleAccretionHeating; // Heating rate in accretion zone
+uniform float agingRate;   // STELLAR_AGING_RATE
+uniform float coolingRate; // GAS_COOLING_RATE
+
+// For black hole accretion heating
+uniform float gridSize;
+uniform float worldSize;
+uniform float massTextureSize;
+uniform float blackHoleAccretionRadius;
+uniform float blackHoleAccretionHeating;
 
 varying vec2 vUv;
 
-// Particle type constants
-const float TYPE_DARK_MATTER = 0.0;
-const float TYPE_GAS = 1.0;
-const float TYPE_STAR = 2.0;
-
-// Simple pseudo-random function
-float random(vec2 st) {
-  return fract(sin(dot(st.xy, vec2(12.9898, 78.233)) + time) * 43758.5453123);
-}
-
-// Convert world position to grid coordinates
-vec3 worldToGrid(vec3 worldPos) {
+// --- HELPER FUNCTIONS (Inlined) ---
+// Convert world position to grid coordinates [cite: 132-135]
+vec3 worldToGrid(vec3 worldPos, float gridSize, float worldSize) {
+  // Center the grid around origin
   vec3 centered = worldPos + vec3(worldSize * 0.5);
+  // Normalize to [0, gridSize]
   vec3 gridPos = (centered / worldSize) * gridSize;
+  // Clamp to valid range
   return clamp(gridPos, vec3(0.0), vec3(gridSize - 1.0));
 }
 
-// Convert 3D grid coordinates to 2D texture UV
-vec2 grid3DTo2D(vec3 gridPos) {
-  float layersPerRow = massTextureSize / gridSize; // 8 for 512/64
+// Convert 3D grid coordinates to 2D texture UV [cite: 135-139]
+vec2 grid3DTo2D(vec3 gridPos, float gridSize, float textureSize) {
+  float layersPerRow = textureSize / gridSize; // 8 for 512/64
 
   float z = gridPos.z;
   float layerX = mod(z, layersPerRow);
   float layerY = floor(z / layersPerRow);
-
   float pixelX = layerX * gridSize + gridPos.x;
   float pixelY = layerY * gridSize + gridPos.y;
-
   return vec2(
-    (pixelX + 0.5) / massTextureSize,
-    (pixelY + 0.5) / massTextureSize
+    (pixelX + 0.5) / textureSize,
+    (pixelY + 0.5) / textureSize
   );
+}
+// --- END HELPER FUNCTIONS ---
+
+// Pseudo-random number generator
+float rand(vec2 co){
+  return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
 }
 
 void main() {
-    // Read current state
-    vec4 posData = texture2D(positionTexture, vUv);
-    vec4 velData = texture2D(velocityTexture, vUv);
+  vec4 pos = texture2D(positionTexture, vUv);
+  vec4 vel = texture2D(velocityTexture, vUv);
 
-    float particleType = posData.w;
-    vec3 velocity = velData.xyz;
-    float tempOrAge = velData.w; // Temperature for gas, age for stars
+  float type = pos.w;
+  float ageOrTemp = vel.w; // This value is Temperature for Gas, Age for Stars
 
-    // ===== STAR AGING =====
-    if (particleType > 1.5 && particleType < 3.0) {
-        // Stars (main sequence and red giants): velocity.w stores AGE (0.0 = newborn, 1.0 = ancient)
+  // --- 1. GAS COOLING ---
+  // Primordial gas (Type 1.0) starts hot (0.8-0.95) and must cool
+  // to reach star formation range (0.1-0.4)
+  if (type == 1.0) {
+    float cooling = coolingRate * delta;
+    // Cool down, but don't go below 0
+    ageOrTemp = max(0.0, ageOrTemp - cooling);
 
-        if (particleType > 2.0 && particleType < 2.01) {
-            // Newly formed star (type 2.001) - initialize age to 0.0
-            // This star just converted from gas and inherited gas temperature
-            tempOrAge = 0.0;
-
-            // MASS ASSIGNMENT happens in next stateFragment pass when age is initialized
-            // (Can't do it here because we can't modify particleType in velocityStateFragment)
-        } else {
-            // Mass-dependent aging: Massive stars age MUCH faster (shorter lifetimes)
-            float agingMultiplier = 1.0;
-
-            // Massive stars (2.002), massive red giants (2.502), and failed supernovae (2.503) age 5x faster
-            // Realistic: Massive stars live ~10-20 Myr, normal stars live ~10 Gyr
-            if (particleType > 2.001 && particleType < 2.003) {
-                agingMultiplier = 5.0; // Massive main sequence stars
-            } else if (particleType > 2.501 && particleType < 2.51) {
-                agingMultiplier = 5.0; // Massive red giants (both explosive and non-explosive)
-            }
-
-            // Apply age increase with mass-dependent rate
-            tempOrAge = min(tempOrAge + agingRate * delta * agingMultiplier, 0.98);
-        }
+    // --- 1b. BLACK HOLE ACCRETION HEATING ---
+    // Sample mass grid to find nearby black holes
+    vec3 gridPos = worldToGrid(pos.xyz, gridSize, worldSize);
+    vec2 massUv = grid3DTo2D(gridPos, gridSize, massTextureSize);
+    vec4 massCell = texture2D(massTexture, massUv);
+    
+    float cellMass = massCell.w;
+    
+    // Check if cell contains a black hole (Type 5.0)
+    // We check mass, as type isn't stored in mass grid. 
+    // High mass (BH_GRAVITY_MULTIPLIER) is a proxy.
+    if (cellMass > 2.0) { 
+      float distToBH = distance(pos.xyz, massCell.xyz);
+      if (distToBH < blackHoleAccretionRadius) {
+        // Heat up gas in the accretion disk
+        float heating = blackHoleAccretionHeating * delta * (1.0 - (distToBH / blackHoleAccretionRadius));
+        ageOrTemp += heating;
+      }
     }
-    // ===== WHITE DWARF AGING =====
-    else if (particleType >= 3.0 && particleType < 4.0) {
-        // White dwarf (type 3.0): velocity.w stores cooling time
-        // Newly formed white dwarfs have age ~0.95 from red giant phase
-        // Reset to 0.0 to represent fresh, hot white dwarf that cools over time
-        if (tempOrAge > 0.9) {
-            // Newly formed white dwarf - reset to hot state
-            tempOrAge = 0.0; // 0.0 = hot blue-white, 1.0 = cool dim white dwarf
-        } else {
-            // White dwarfs cool slowly over time
-            tempOrAge = min(tempOrAge + agingRate * delta * 0.1, 0.99); // Cool 10x slower than stars age
-        }
-    }
-    // ===== NEUTRON STAR FORMATION =====
-    else if (particleType >= 4.0 && particleType < 5.0) {
-        // Neutron star (type 4.0): Supernova remnant
-        // velocity.w stores cooling/age since formation
-        if (tempOrAge >= 0.84 && tempOrAge < 0.87) {
-            // Newly formed from supernova (inherited parent age ~0.85) - trigger bright flash ONCE!
-            // Set to high value for flash, but will immediately cool to 0.8 next frame
-            tempOrAge = 0.99; // Maximum brightness for visual flash
-        } else if (tempOrAge > 0.98) {
-            // Just finished flashing - cool down quickly to exit trigger range
-            tempOrAge = 0.8; // Drop below trigger threshold to prevent re-flash
-        } else {
-            // Normal cooling - neutron stars cool over time
-            tempOrAge = max(tempOrAge - agingRate * delta * 1.0, 0.1); // Cool down from 0.8 → 0.1
-        }
-    }
-    // ===== BLACK HOLE FORMATION & ACCRETION =====
-    else if (particleType >= 5.0 && particleType < 6.0) {
-        // Black hole (type 5.0): Supernova remnant with extreme gravity
-        // velocity.w stores "activity" level (accretion state)
-        if (tempOrAge >= 0.84 && tempOrAge < 0.87) {
-            // Newly formed from supernova (inherited parent age ~0.85) - trigger bright flash ONCE!
-            // Set to high value for flash, but will immediately cool to 0.83 next frame
-            tempOrAge = 0.99; // Maximum brightness for visual flash
-        } else if (tempOrAge > 0.98) {
-            // Just finished flashing - cool down quickly to exit trigger range
-            tempOrAge = 0.83; // Drop below trigger threshold to prevent re-flash, but keep high
-        } else {
-            // Black holes maintain high activity from accretion
-            // Cool slowly from initial flash, but maintain minimum glow
-            tempOrAge = max(tempOrAge - agingRate * delta * 0.2, 0.75); // Slow cooling, high floor for glow
-        }
-    }
-    // ===== GAS COOLING & STELLAR FEEDBACK HEATING =====
-    else if (particleType > 0.5 && particleType < 1.5) {
-        // Gas: velocity.w stores TEMPERATURE (0.0 = cold, 1.0 = hot)
+  }
 
-        // Check local density from mass grid
-        vec3 position = posData.xyz;
-        vec3 gridPos = worldToGrid(position);
-        vec2 uv = grid3DTo2D(gridPos);
-        vec4 massData = texture2D(massTexture, uv);
-        float localDensity = massData.w; // Total mass in this cell
+  // --- 2. STELLAR AGING ---
+  // We must age ALL non-compact stars and giants
+  // `floor(type) == 2.0` correctly ages:
+  // 2.0 (Main Sequence)
+  // 2.002 (Massive Main Sequence)
+  // 2.5 (Red Giant)
+  // 2.502 (Massive Red Giant)
+  if (floor(type) == 2.0) {
+    ageOrTemp += agingRate * delta;
+  }
 
-        // STELLAR FEEDBACK: Gas in high-density regions (star-forming/stellar zones) gets heated
-        // High density indicates presence of stars or star formation
-        float heatingThreshold = 2.0; // Higher than star formation threshold (0.8) to allow cooling first
-        if (localDensity > heatingThreshold) {
-            // Heat up gas in stellar neighborhoods
-            // More density = more heating (young star clusters are hot!)
-            float heatingAmount = 0.001 * (localDensity - heatingThreshold);
-            tempOrAge = min(tempOrAge + heatingAmount * delta, 0.95); // Heat up, cap at 0.95
-        } else {
-            // Gradually cool down gas in low-density regions
-            tempOrAge = max(tempOrAge - coolingRate * delta, 0.1); // Min temperature 0.1
-        }
-    }
-    // Dark matter: no temperature or age
-
-    // Output updated velocity and temperature/age
-    gl_FragColor = vec4(velocity, tempOrAge);
+  // Output: vel.xyz is unchanged, vel.w is updated age/temp
+  gl_FragColor = vec4(vel.xyz, ageOrTemp);
 }

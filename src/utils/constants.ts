@@ -67,8 +67,8 @@ export const WHITE_DWARF_AGE_THRESHOLD = 0.95 // Red giants become white dwarfs 
 export const SUPERNOVA_AGE_THRESHOLD = 0.85 // Massive stars explode at this age (~8-9 Gyr)
 export const SUPERNOVA_RADIUS = 30.0 // Explosion blast radius (world units) - DOUBLED for dramatic effect!
 export const SUPERNOVA_VELOCITY_BOOST = 50.0 // Ejecta speed multiplier - MASSIVE shockwave!
-export const SUPERNOVA_PROBABILITY = 0.02 // 2% of stars go supernova (realistic: only massive stars >10 M☉)
-export const BLACK_HOLE_PROBABILITY = 0.2 // 20% of supernovae create black holes, 80% neutron stars (realistic 4:1 ratio)
+export const SUPERNOVA_PROBABILITY = 1.0 // 100% of massive stars go supernova (realistic - all massive stars explode!)
+export const BLACK_HOLE_PROBABILITY = 0.1 // 10% of supernovae create black holes, 90% neutron stars (realistic 9:1 ratio)
 export const BLACK_HOLE_ACCRETION_RADIUS = 5.0 // Gas heating zone around black holes
 export const BLACK_HOLE_GRAVITY_MULTIPLIER = 3.0 // Enhanced gravitational pull
 
