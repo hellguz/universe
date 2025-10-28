@@ -7,8 +7,8 @@ export const TEXTURE_SIZE = 1500 // 1500x1500 = 2.25 million particles
 export const PARTICLE_COUNT = TEXTURE_SIZE * TEXTURE_SIZE
 
 // Barnes-Hut Octree settings
-export const MASS_GRID_SIZE = 64 // 3D grid resolution for mass distribution (64³ = 262K cells)
-export const MASS_GRID_TEXTURE_SIZE = 512 // 2D texture size to store flattened 3D grid (8x8 layers of 64x64)
+export const MASS_GRID_SIZE = 128 // 3D grid resolution for mass distribution (128³ = 2.1M cells)
+export const MASS_GRID_TEXTURE_SIZE = 1024 // 2D texture size to store flattened 3D grid (8x8 layers of 64x64)
 export const MASS_GRID_WORLD_SIZE = 300.0 // World space size covered by mass grid (increased for larger spread)
 export const BARNES_HUT_THETA = 0.5 // Opening angle criterion (0.5 = good balance)
 
@@ -24,7 +24,7 @@ export const GRAVITY_CUTOFF_DISTANCE = 80.0 // Only check nearby particles
 // Physics constants (scaled for simulation)
 export const GRAVITATIONAL_CONSTANT = 0.0001 // Scaled G for visible effects
 export const TIMESTEP = 0.016 // ~60fps
-export const SOFTENING_LENGTH = 8 // Prevent singularities (larger for more particles)
+export const SOFTENING_LENGTH = 14 // Prevent singularities (larger for more particles)
 
 // Initial conditions - Natural structure formation from density perturbations
 export const INITIAL_SPREAD = 110 // Spherical distribution radius (73% of world space) - comfortable margin from boundaries
