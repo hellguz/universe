@@ -25,18 +25,17 @@ export function createDataTexture(size: number): THREE.DataTexture {
  *
  * Particle types:
  * 0.0 = Dark Matter (60%) - Extended halo around disk
- * 1.0 = Gas (35%) - Concentrated in disk plane
- * 2.0 = Stars (5%) - Concentrated in disk plane
+ * 1.0 = Gas (40%) - Concentrated in disk plane
+ * 2.0 = Stars (0%) - None at Big Bang, will form during simulation
  */
 export function createPositionTexture(): THREE.DataTexture {
   const size = TEXTURE_SIZE
   const data = new Float32Array(size * size * 4)
 
   // Calculate type distribution thresholds
-  // Start with some stars already formed (5%)
-  const darkMatterThreshold = 0.60 // 60% dark matter
-  const gasThreshold = 0.95 // 35% gas
-  // 5% stars (remaining)
+  // REALISTIC: No stars at t=0 (Big Bang), only dark matter and primordial gas
+  const darkMatterThreshold = 0.60 // 60% dark matter, 40% gas (remaining)
+  // 0% stars - all stars will form naturally during simulation!
 
   for (let i = 0; i < size * size; i++) {
     const i4 = i * 4
@@ -47,10 +46,8 @@ export function createPositionTexture(): THREE.DataTexture {
 
     if (rand < darkMatterThreshold) {
       particleType = 0.0 // Dark Matter (60%)
-    } else if (rand < gasThreshold) {
-      particleType = 1.0 // Gas (35%)
     } else {
-      particleType = 2.0 // Stars (5%) - main sequence stars
+      particleType = 1.0 // Gas (40%) - Primordial hydrogen and helium
     }
 
     // Disk galaxy distribution
@@ -132,9 +129,9 @@ export function createVelocityTexture(positionTexture: THREE.DataTexture): THREE
       data[i4 + 1] = (Math.random() - 0.5) * INITIAL_VELOCITY_SPREAD * 0.1 // vy (minimal vertical motion)
       data[i4 + 2] = vz + (Math.random() - 0.5) * INITIAL_VELOCITY_SPREAD * 0.3 // vz with turbulence
 
-      // Gas temperature: Primordial gas starts warm (cools rapidly to formation range)
-      // Starting closer to formation range (0.1-0.4) for faster star formation
-      temperature = 0.5 + Math.random() * 0.2 // 0.5-0.7 (warm, cools in ~5 seconds)
+      // Gas temperature: Primordial gas starts HOT (like early universe after recombination)
+      // Must cool significantly before reaching star formation range (0.1-0.4)
+      temperature = 0.80 + Math.random() * 0.15 // 0.80-0.95 (hot, needs ~100+ seconds to cool to formation range)
     } else if (particleType > 1.5) {
       // Stars: inherit rotation from gas + slight random motion
       if (r > 0.01) {

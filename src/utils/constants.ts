@@ -55,7 +55,7 @@ export const CAMERA_FAR = 10000
 export const STAR_FORMATION_DENSITY_THRESHOLD = 0.8 // Mass units per cell for star formation
 export const STAR_FORMATION_TEMP_MIN = 0.1 // Minimum temperature for star formation (cold molecular clouds)
 export const STAR_FORMATION_TEMP_MAX = 0.4 // Maximum temperature for star formation (cool, not hot)
-export const STAR_FORMATION_RATE = 0.002 // Probability per frame (0.2% - gas lasts throughout simulation)
+export const STAR_FORMATION_RATE = 0.0003 // Probability per frame (0.03% - gradual star formation over cosmic history)
 
 // Stellar Evolution - Calibrated for realistic 10 Gyr main sequence lifetime
 export const STELLAR_AGING_RATE = 0.00161 // Stars reach red giant phase (0.7) at 10 Gyr universe age (434.78 sim seconds)
@@ -71,5 +71,5 @@ export const BLACK_HOLE_PROBABILITY = 0.2 // 20% of supernovae create black hole
 export const BLACK_HOLE_ACCRETION_RADIUS = 5.0 // Gas heating zone around black holes
 export const BLACK_HOLE_GRAVITY_MULTIPLIER = 3.0 // Enhanced gravitational pull
 
-// Gas Evolution - Very fast early cooling for visible star formation
-export const GAS_COOLING_RATE = 0.002 // Hot gas (0.6) cools to cold (0.3) in ~4 seconds (rapid cooling)
+// Gas Evolution - Realistic primordial gas cooling from hot early universe
+export const GAS_COOLING_RATE = 0.022 // Hot primordial gas (0.8-0.95) cools to star formation range (0.1-0.4) over ~500 Myr
