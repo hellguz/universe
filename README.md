@@ -1,639 +1,142 @@
-# Universe Simulator
+# 🌌 Universe Simulator
 
-A full-featured, particle-based universe simulator that visualizes cosmic evolution from the Big Bang to the present day. Watch galaxies form, stars ignite, and planets orbit in real-time with accurate physics and stunning visual effects.
+A real-time, interactive N-body simulation that visualizes cosmic evolution from the Big Bang to the present day. Watch millions of particles coalesce under gravity to form galaxies, stars, and black holes, all rendered in your browser at 60fps.
 
-## Vision
+This project is an immersive digital laboratory for exploring astrophysical concepts. It starts from initial conditions inspired by inflationary cosmology—with smooth density perturbations and tidal angular momentum—and lets you watch as complex structures emerge entirely from fundamental physics.
 
-Create an immersive, interactive experience that allows users to:
-- Witness the evolution of the universe from the Big Bang through billions of years
-- Observe realistic galaxy formation, stellar ignition, and planetary dynamics
-- Experience cosmic events including supernovae, black hole formations, and cosmic microwave background radiation
-- Manipulate fundamental variables (time scale, mass distribution, spatial dimensions) to explore different evolutionary paths
-- Interact with millions of particles running smoothly at 60fps on both desktop and mobile devices
 
-## Core Requirements
 
-### Simulation Features
+---
 
-#### Cosmic Evolution
-- **Big Bang Origin**: Initial conditions based on inflationary cosmology
-- **Universe Expansion**: Cosmological expansion with configurable Hubble parameter
-- **Dark Matter Distribution**: Invisible mass scaffolding for structure formation
-- **Cosmic Microwave Background**: Visual representation of early universe radiation
+## ✨ Core Features
 
-#### Structure Formation
-- **Galaxy Formation**: From primordial density fluctuations to spiral/elliptical galaxies
-- **Star Clusters**: Globular and open cluster formation
-- **Galactic Dynamics**: Rotation curves, spiral arms, galactic collisions
-- **Large-Scale Structure**: Cosmic web, filaments, and voids
+* **Massive Scale:** Simulates **2.25 million particles** (1500x1500 texture) at a consistent 60fps.
+* **Interactive Time Control:** Play, pause, and adjust the speed of cosmic evolution. A single simulation second represents **23 million years** (Myr), allowing you to witness 13.8 billion years (Gyr) in just 10 minutes.
+* **Full Stellar Lifecycle:** The simulation doesn't just move dots. It models the entire life of a star:
+    * **Star Formation:** Primordial gas cools and collapses in dense regions to form new stars (Main Sequence).
+    * **Stellar Aging:** Stars age over time, eventually swelling into **Red Giants**.
+    * **Stellar Death:** Low-mass stars end their lives as **White Dwarfs**, while massive stars explode in **Supernovae**, leaving behind **Neutron Stars** or **Black Holes**.
+* **High-Performance GPU Physics:** All physics, state transitions, and rendering are performed **100% on the GPU** using a Frame Buffer Object (FBO) "ping-pong" technique.
+* **Optimized Gravity:** Features a toggleable gravity system. You can switch instantly between a simple, fixed-sample approximation and a high-performance **Barnes-Hut (O(N log N)) algorithm** to see the dramatic difference in performance and accuracy.
+* **Stunning Visuals:** A custom GLSL shader pipeline uses additive blending and a **Bloom post-processing effect** to create a beautiful, glowing "nebula" aesthetic for gas clouds and bright stars.
+* **Live Data HUD:** A minimalist interface displays real-time statistics, including FPS, total particle count, universe age in billions of years, and a detailed breakdown of all particle types (Dark Matter, Gas, Main Sequence, Red Giants, Black Holes, etc.).
 
-#### Stellar Physics
-- **Star Formation**: Collapse of gas clouds into protostars
-- **Main Sequence Evolution**: Color and luminosity based on mass
-- **Stellar Classification**: O, B, A, F, G, K, M spectral types
-- **Stellar Death**:
-  - Planetary nebulae from low-mass stars
-  - Supernovae (Type Ia, Type II)
-  - Neutron stars and pulsars
-  - Black hole formation and accretion
+---
 
-#### Planetary Systems
-- **Planet Formation**: Protoplanetary disk evolution
-- **Orbital Mechanics**: Keplerian orbits with perturbations
-- **Multiple Star Systems**: Binary, trinary stellar configurations
-- **Exoplanet Diversity**: Rocky, gas giant, ice giant classifications
+## 🚀 How It Works
 
-#### Cosmic Events
-- **Supernovae**: Core-collapse and thermonuclear explosions
-- **Gamma-Ray Bursts**: From massive star collapse
-- **Black Hole Mergers**: Gravitational wave events
-- **Neutron Star Collisions**: Kilonova events
-- **Active Galactic Nuclei**: Quasar and blazar activity
+The simulation's performance is achieved by offloading all computation to the GPU. The state of every particle is stored in massive floating-point textures, not in JavaScript.
 
-### Interactive Controls
+### 1. GPU-Based Simulation (FBO)
 
-#### Time Manipulation
-- **Time Scale Control**: From real-time to billions of years per second
-- **Pause/Resume**: Freeze simulation state
-- **Timeline Markers**: Jump to significant cosmic epochs
-- **Playback Speed**: Variable time dilation (1x to 1,000,000x)
+This project uses a "ping-pong" rendering technique with Frame Buffer Objects (FBOs).
 
-#### Physical Parameters
-- **Initial Conditions**:
-  - Particle count (100K - 5M)
-  - Initial density distribution
-  - Temperature and energy
-- **Universal Constants**:
-  - Gravitational constant
-  - Dark matter ratio
-  - Dark energy/cosmological constant
-  - Expansion rate
-- **Local Parameters**:
-  - Star formation rate
-  - Supernova frequency
-  - Black hole mass thresholds
+1.  **State Textures:** We maintain two sets of `WebGLRenderTarget` (float textures) for both **position** and **velocity**. Let's call them Set A and Set B.
+    * `positionTexture`: Stores `(x, y, z, particleType)`
+    * `velocityTexture`: Stores `(vx, vy, vz, ageOrTemperature)`
+2.  **Simulation Pass (Physics):** In this pass, we run a custom GLSL fragment shader. It **reads** from the textures in Set A to calculate physics (like gravity and state changes) and **writes** the *new* state into the textures in Set B.
+3.  **Render Pass (Visualization):** In this pass, a different shader **reads** from the newly updated textures in Set B to draw the particles to the screen.
+4.  **The "Ping-Pong":** On the next frame, the roles are swapped. The simulation pass reads from Set B and writes to Set A. This cycle repeats, allowing the simulation to evolve entirely on the GPU without costly CPU readbacks.
 
-#### Spatial Controls
-- **Camera Movement**:
-  - Free-fly navigation
-  - Orbit selected objects
-  - Follow particle trajectories
-- **Zoom Levels**: From cosmic scale (Gpc) to stellar systems (AU)
-- **Coordinate Systems**: Comoving vs physical coordinates
+### 2. Physics & Evolution Model
 
-### Visual Representation
+All the "magic" happens inside custom GLSL shaders.
 
-#### Rendering
-- **Particle System**: WebGL-based with shader-driven effects
-- **Color Coding**:
-  - Temperature (blue = hot, red = cool for stars)
-  - Density (for gas/dark matter)
-  - Velocity (Doppler shift visualization)
-  - Age (temporal evolution)
-- **Glow Effects**: Bloom for bright objects (stars, AGN)
-- **Trails**: Particle path history (optional)
-- **Adaptive Detail**: LOD based on zoom level
+* **Barnes-Hut Gravity (`velocityFragment.glsl`):** To calculate gravity efficiently, we first build a 3D mass-distribution grid (which is flattened into a 2D texture). The velocity shader then traverses this grid for each particle, using the Barnes-Hut approximation to calculate the net gravitational force from millions of other particles in O(N log N) time.
+* **Stellar Evolution (`stateFragment.glsl`):** This shader is a massive state machine. On every frame, it checks each particle's type, age, and local environment (density, temperature) to see if it should transition.
+    * A `Gas` particle (Type 1.0) in a cold, dense area may become a `Star` (Type 2.0).
+    * A `Star` whose `age` (from `velocity.w`) exceeds `0.7` will transition to a `Red Giant` (Type 2.5).
+    * A `Red Giant` whose `age` exceeds `0.95` becomes a `White Dwarf` (Type 3.0).
+    * A `Massive Red Giant` (Type 2.502) whose `age` exceeds `0.85` will become a `Neutron Star` (Type 4.0) or `Black Hole` (Type 5.0).
+* **Aging & Cooling (`velocityStateFragment.glsl`):** This shader is responsible for updating the `ageOrTemperature` value. If the particle is `Gas`, it cools it down. If it's a `Star` or `Red Giant`, it increments its `age`.
 
-#### Visual Effects
-- **Supernova Explosions**: Expanding shockwaves with particle ejection
-- **Black Hole Accretion**: Accretion disk with gravitational lensing effect
-- **Nebulae**: Gas cloud visualization with emission colors
-- **Cosmic Web**: Dark matter filament highlighting
-- **Galaxy Arms**: Spiral density wave patterns
+---
 
-#### UI Design
-- **Aesthetic**: Minimalist white-on-black interface
-- **Control Panel**: Clean, collapsible sidebar with grouped controls
-- **HUD**: Time elapsed, particle count, simulation stats
-- **Tooltips**: Contextual help on hover
-- **Responsive**: Adapts to mobile and desktop screens
+## 💻 Technology Stack
 
-## Technical Stack
+* **Frontend:** React 18 (with Vite)
+* **Language:** TypeScript
+* **3D Rendering:** Three.js & React Three Fiber
+* **Helpers:** React Three Drei
+* **Post-Processing:** React Three Postprocessing
+* **State Management:** Zustand
+* **Shaders:** GLSL (via `vite-plugin-glsl`)
 
-### Core Technologies
-- **React**: ^18.x - Component architecture
-- **React Three Fiber**: ^8.x - React renderer for Three.js
-- **Three.js**: ^0.160+ - WebGL 3D engine
-- **TypeScript**: ^5.x - Type safety
-- **Vite**: ^5.x - Build tool and dev server
-- **Yarn**: Package management
+---
 
-### Additional Libraries
-- **@react-three/drei**: Helpers and abstractions for R3F
-- **@react-three/postprocessing**: Visual effects (bloom, etc.)
-- **zustand**: Lightweight state management
-- **leva**: GUI controls for debugging
-- **glsl-noise**: Shader noise functions
-- **stats.js**: Performance monitoring
+## 🛠️ Getting Started
 
-## Performance Targets
+Follow these instructions to get a copy of the project up and running on your local machine for development and testing.
 
-### Primary Goals
-- **Particle Count**: 5,000,000 particles (desktop), 500,000 (mobile)
-- **Frame Rate**: Consistent 60 FPS
-- **Startup Time**: < 3 seconds to first interactive frame
-- **Memory Usage**: < 2GB on desktop, < 512MB on mobile
+### Prerequisites
 
-### Optimization Strategies
-- **Frame Buffer Objects (FBO)**: GPU-based particle simulation
-- **Instanced Rendering**: Efficient particle rendering
-- **Compute Shaders**: Parallel physics calculations
-- **Spatial Partitioning**: Octree/Barnes-Hut for gravity
-- **Level of Detail**: Reduce particle detail at distance
-- **Frustum Culling**: Only render visible particles
-- **Texture Atlases**: Minimize texture switches
+You must have [Node.js](https://nodejs.org/) (v18+) and [Yarn](https://yarnpkg.com/) installed on your system.
 
-## Architecture
+### 1. Installation
 
-### Particle System Design
+Clone the repository and install the dependencies.
 
-The simulation uses a dual-pass rendering architecture leveraging Frame Buffer Objects (FBO) to achieve extreme performance with millions of particles.
+```bash
+# 1. Clone the repository
+git clone [https://github.com/your-username/universe-simulator.git](https://github.com/your-username/universe-simulator.git)
 
-#### 1. Simulation Pass (Physics)
-```
-Data Textures (RGBA Float32) → Fragment Shader → Updated State → Render Target
+# 2. Navigate into the project directory
+cd universe-simulator
+
+# 3. Install packages with Yarn
+yarn install
+````
+
+### 2\. Running the Development Server
+
+To start the simulation in development mode with hot-reloading:
+
+```bash
+# Run the dev server
+yarn dev
 ```
 
-**Input Data Textures**:
-- Position Texture (x, y, z, mass)
-- Velocity Texture (vx, vy, vz, temperature)
-- Metadata Texture (type, age, state, energy)
+Vite will automatically open the project in your default browser at `http://localhost:5173`.
 
-**Fragment Shader Calculations**:
-- Gravitational force computation (Barnes-Hut approximation)
-- Velocity integration (Verlet/RK4)
-- Collision detection and response
-- State transitions (e.g., gas → star, star → supernova)
-- Temperature and energy updates
+### 3\. Building for Production
 
-**Output**: Updated textures written to WebGLRenderTarget
+To create an optimized, static build of the project:
 
-#### 2. Render Pass (Visualization)
-```
-Render Target Textures → Vertex Shader → Fragment Shader → Screen
+```bash
+# Build the project
+yarn build
 ```
 
-**Vertex Shader**:
-- Read position from FBO texture
-- Calculate particle size based on type/distance
-- Apply camera transformations
-- Set gl_Position and gl_PointSize
+The optimized files will be output to the `/dist` directory. You can preview the production build locally using `yarn preview`.
 
-**Fragment Shader**:
-- Sample particle type and state
-- Apply color based on temperature/type
-- Create glow effect (radial gradient)
-- Blend mode for luminous effects
+-----
 
-### Physics Model (Simplified)
+## 📁 Project Structure
 
-#### Gravitational Interactions
-**Barnes-Hut Algorithm** (O(N log N) complexity):
-1. Build octree spatial partition each frame
-2. Group distant particles into nodes with center of mass
-3. For each particle:
-   - Traverse octree
-   - Use node COM if θ = s/d < 0.5 (s=node size, d=distance)
-   - Use direct calculation for nearby particles
-4. Accumulate forces and update velocities
-
-#### Cosmological Expansion
-- Hubble flow: `v_recession = H₀ × distance`
-- Implemented as velocity offset in simulation pass
-- Configurable expansion rate
-
-#### Stellar Evolution (State Machine)
-States: Gas Cloud → Protostar → Main Sequence → Red Giant → End State
-- **Gas Cloud**: Low temperature, collapsing if density threshold met
-- **Protostar**: Heating phase, fusion begins at T > 10⁷K
-- **Main Sequence**: Stable fusion, lifetime ∝ M⁻²·⁵
-- **Red Giant**: Expanded radius, cooler surface temp
-- **End States**:
-  - M < 8 M☉: Planetary Nebula → White Dwarf
-  - M > 8 M☉: Supernova → Neutron Star or Black Hole
-
-#### Particle Types
-1. **Dark Matter** (60% of particles)
-   - Only gravitational interaction
-   - Invisible (rendered as subtle glow in debug mode)
-
-2. **Gas** (35% of particles)
-   - Collision and pressure forces
-   - Can form stars when dense
-   - Color coded by temperature
-
-3. **Stars** (4% of particles)
-   - Point masses with luminosity
-   - Color based on spectral class
-   - State evolution over time
-
-4. **Compact Objects** (1% of particles)
-   - White dwarfs, neutron stars, black holes
-   - Special rendering (accretion disks, lensing)
-
-### Data Flow
-
-```
-User Input → State Manager (Zustand)
-                ↓
-    Simulation Parameters (Uniforms)
-                ↓
-    ┌───────────────────────────┐
-    │   Simulation Material     │
-    │  (Fragment Shader on GPU) │
-    │                           │
-    │  - Barnes-Hut Gravity     │
-    │  - Velocity Integration   │
-    │  - State Transitions      │
-    │  - Temperature Updates    │
-    └───────────┬───────────────┘
-                ↓
-    WebGLRenderTarget (FBO)
-    - Position Texture
-    - Velocity Texture
-    - Metadata Texture
-                ↓
-    ┌───────────────────────────┐
-    │    Render Material        │
-    │ (Vertex + Fragment Shader)│
-    │                           │
-    │  - Position Lookup        │
-    │  - Particle Visualization │
-    │  - Color/Size Mapping     │
-    └───────────┬───────────────┘
-                ↓
-         Screen Output (60 FPS)
-```
-
-### Project Structure
+The project code is organized as follows:
 
 ```
 universe-simulator/
-├── public/
-│   └── assets/
-│       └── textures/          # Any static textures
-├── src/
-│   ├── components/
-│   │   ├── Scene.tsx          # Main R3F Canvas
-│   │   ├── Camera.tsx         # Camera controls
-│   │   ├── ParticleSystem.tsx # Main particle renderer
-│   │   ├── ControlPanel.tsx   # UI controls
-│   │   └── HUD.tsx            # Stats overlay
-│   ├── simulation/
-│   │   ├── FBO.tsx            # Frame Buffer Object setup
-│   │   ├── SimulationMaterial.ts # Physics shader material
-│   │   ├── RenderMaterial.ts  # Visual shader material
-│   │   └── initialConditions.ts # Universe setup
-│   ├── physics/
-│   │   ├── barnesHut.ts       # Octree implementation
-│   │   ├── gravity.worker.ts  # Web Worker for CPU fallback
-│   │   ├── stellarEvolution.ts # Star lifecycle logic
-│   │   └── cosmology.ts       # Expansion, CMB, etc.
-│   ├── shaders/
-│   │   ├── simulation/
-│   │   │   ├── vertex.glsl
-│   │   │   └── fragment.glsl  # Main physics calculations
-│   │   └── render/
-│   │       ├── vertex.glsl    # Particle positioning
-│   │       └── fragment.glsl  # Particle appearance
-│   ├── store/
-│   │   └── simulationStore.ts # Zustand state
-│   ├── utils/
-│   │   ├── dataTexture.ts     # FBO texture helpers
-│   │   ├── colorMaps.ts       # Temperature → Color
-│   │   └── constants.ts       # Physical constants
-│   ├── types/
-│   │   └── index.ts           # TypeScript definitions
-│   ├── App.tsx
-│   └── main.tsx
+├── /public/              # Static assets
+├── /src/
+│   ├── /components/      # React components (Scene.tsx, ControlPanel.tsx, HUD.tsx)
+│   ├── /shaders/         # All GLSL shader files
+│   │   ├── /massGrid/    # Barnes-Hut mass grid shaders
+│   │   ├── /render/      # Particle visualization shaders
+│   │   └── /simulation/  # Physics (velocity, position) & state transition shaders
+│   ├── /simulation/      # TypeScript setup for FBOs & ShaderMaterials
+│   ├── /store/           # Zustand global state (simulationStore.ts)
+│   ├── /types/           # TypeScript type definitions
+│   ├── /utils/           # Constants and data texture generation (dataTexture.ts)
+│   ├── App.tsx           # Main app component
+│   └── main.tsx          # React entry point
 ├── package.json
 ├── tsconfig.json
-├── vite.config.ts
-└── README.md
+└── vite.config.ts
 ```
 
-## Phased Development Roadmap
+-----
 
-### Phase 1: MVP - Basic Particle System ✅ COMPLETE
+## 📄 License
 
-**Goal**: Functional particle simulator with gravity and basic controls
-**Completed**: 2025-10-25
-
-#### Features
-- [x] Project setup (Vite + React + TypeScript + R3F)
-- [x] Basic FBO implementation with simulation/render passes
-- [x] Simple gravitational simulation (direct N-body, limited particles)
-- [x] Initial particle distribution (random sphere)
-- [x] Basic camera controls (orbit, zoom, pan)
-- [x] Time control (play, pause, speed adjustment)
-- [x] Simple particle rendering (single color, size based on distance)
-- [x] Basic UI (minimal controls, stats display)
-- [x] Performance monitoring (FPS counter)
-
-#### Technical Milestones
-1. ✅ **FBO Setup**: 128×128 texture (16,384 particles) running at 60fps
-2. ✅ **Gravity Working**: Particles attract each other visibly
-3. ✅ **Smooth Controls**: Camera and time manipulation responsive
-4. ✅ **Clean UI**: White-on-black minimal interface
-
-#### Success Criteria
-- ✅ 16K particles @ 60fps on mid-range hardware
-- ✅ Visible gravitational clustering
-- ✅ Intuitive camera navigation
-- ✅ Time speed adjustable from 1x to 1000x
-
-**See [ITERATIONS.md](ITERATIONS.md) for detailed implementation notes and learnings.**
-
----
-
-### Phase 2: Galaxy Formation & Optimization (3-4 weeks)
-
-**Goal**: Realistic galaxy structures with improved performance
-
-#### Features
-- [ ] Barnes-Hut octree gravity implementation
-- [ ] Scale to 1M+ particles with FBO optimization
-- [ ] Initial conditions for disk/spiral galaxy formation
-- [ ] Particle types: Dark matter, gas, stars
-- [ ] Temperature-based color coding
-- [ ] Particle state system (gas → star transitions)
-- [ ] Rotation and angular momentum conservation
-- [ ] Galaxy collision scenarios
-- [ ] Improved visual effects (glow, bloom)
-- [ ] Performance profiling and optimization
-
-#### Technical Milestones
-1. **Barnes-Hut Integration**: Octree built and traversed in fragment shader
-2. **1M Particles**: Smooth 60fps with full physics
-3. **Galaxy Morphology**: Recognizable spiral arms forming
-4. **Shader Optimization**: Minimize texture lookups, optimize math
-
-#### Success Criteria
-- 1M particles @ 60fps on desktop
-- Clear spiral galaxy formation within 30s sim time
-- Visually distinct particle types
-- < 5% frame time variance
-
----
-
-### Phase 3: Stellar Evolution & Cosmic Events (3-4 weeks)
-
-**Goal**: Realistic stellar lifecycle and spectacular events
-
-#### Features
-- [ ] Star formation from dense gas regions
-- [ ] Spectral class system (O/B/A/F/G/K/M)
-- [ ] Main sequence evolution timescales
-- [ ] Red giant expansion
-- [ ] Supernova explosions with particle ejection
-- [ ] Compact object formation (WD, NS, BH)
-- [ ] Black hole accretion disk visualization
-- [ ] Gravitational lensing effects (simplified)
-- [ ] Planetary nebulae rendering
-- [ ] Cosmic microwave background visualization
-- [ ] Enhanced control panel with event triggers
-- [ ] Timeline system with cosmic epochs
-
-#### Technical Milestones
-1. **State Machine**: Stellar lifecycle states working correctly
-2. **Supernova Effects**: Explosive particle emission implemented
-3. **Visual Polish**: Accretion disks, lensing, nebulae rendered
-4. **Event System**: Triggered cosmic events functional
-
-#### Success Criteria
-- Stars visibly forming, evolving, and dying
-- Supernova creates visible shockwave
-- Black holes render with accretion effects
-- Timeline allows jumping to key moments
-
----
-
-### Phase 4: Advanced Features & Mobile Support (2-3 weeks)
-
-**Goal**: Production-ready with cross-platform support
-
-#### Features
-- [ ] Mobile optimization (reduced particle count, simplified shaders)
-- [ ] Responsive UI for touch devices
-- [ ] Save/load simulation states
-- [ ] Screenshot and video export
-- [ ] Preset scenarios (Big Bang, galaxy collision, etc.)
-- [ ] Parameter presets (different universe constants)
-- [ ] Advanced camera modes (follow particle, tour mode)
-- [ ] Keyboard shortcuts
-- [ ] Help system/tutorial
-- [ ] Performance adaptive quality
-- [ ] PWA support for offline use
-- [ ] Analytics and error tracking
-
-#### Technical Milestones
-1. **Mobile Build**: 500K particles @ 30fps on mobile
-2. **Feature Complete**: All core requirements implemented
-3. **Polish Pass**: UI/UX refined, animations smooth
-4. **Testing**: Cross-browser, cross-device validation
-
-#### Success Criteria
-- Works on iPhone/Android with acceptable performance
-- All features accessible on mobile
-- Preset scenarios demonstrate full capability
-- Production build < 5MB initial load
-
----
-
-### Phase 5: Polish & Extension (Ongoing)
-
-**Optional enhancements for future iterations**:
-
-- [ ] Planetary system detail (zoom to see individual planets)
-- [ ] Multiplayer observation (share simulation state)
-- [ ] VR support for immersive experience
-- [ ] Scientific data export (CSV, JSON)
-- [ ] Integration with real astronomical data
-- [ ] Advanced cosmology (dark energy equation of state)
-- [ ] GPU compute shader acceleration (WebGPU)
-- [ ] Machine learning for structure formation prediction
-- [ ] Sound design (sonification of cosmic events)
-
-## Development Setup
-
-### Prerequisites
-- Node.js 18+
-- Yarn 1.22+
-- Modern GPU with WebGL 2.0 support
-- 8GB+ RAM recommended
-
-### Installation
-
-```bash
-# Clone repository
-git clone <repository-url>
-cd universe-simulator
-
-# Install dependencies
-yarn install
-
-# Start development server
-yarn dev
-
-# Build for production
-yarn build
-
-# Start production build
-yarn start
-```
-
-### Environment Configuration
-
-Create `.env` file for configuration:
-
-```env
-# Development
-VITE_MAX_PARTICLES=5000000
-VITE_DEFAULT_PARTICLES=1000000
-VITE_ENABLE_STATS=true
-VITE_DEBUG_MODE=false
-
-# Physics
-VITE_GRAVITATIONAL_CONSTANT=6.674e-11
-VITE_TIMESTEP=0.016
-VITE_HUBBLE_CONSTANT=70
-
-# Rendering
-VITE_BLOOM_STRENGTH=1.5
-VITE_PARTICLE_SIZE=2.0
-```
-
-### Development Commands
-
-```bash
-yarn dev           # Start dev server (localhost:5173)
-yarn build         # Production build
-yarn start         # Preview production build
-yarn lint          # Run ESLint
-yarn ts            # TypeScript validation
-yarn test          # Run tests (Vitest)
-```
-
-## Key Technical Challenges
-
-### 1. Particle Count vs Performance
-**Challenge**: Simulating 5M particles with complex physics at 60fps
-
-**Solution**:
-- FBO technique offloads all physics to GPU fragment shaders
-- Barnes-Hut reduces gravity complexity from O(N²) to O(N log N)
-- Instanced rendering for particle visualization
-- Adaptive quality based on performance monitoring
-
-### 2. Accurate Physics at Scale
-**Challenge**: Balancing realism with computational feasibility
-
-**Solution**:
-- Use simplified but physically-motivated models
-- Barnes-Hut approximation for distant particles
-- Stellar evolution as discrete state machine vs continuous simulation
-- Cosmological expansion as velocity field vs full GR
-
-### 3. Visual Clarity
-**Challenge**: Making millions of particles comprehensible
-
-**Solution**:
-- Color coding by temperature, type, age
-- Adaptive particle size (larger when important/close)
-- Bloom effects for luminous objects
-- Optional trails and highlighting
-- Adjustable density/opacity
-
-### 4. Mobile Performance
-**Challenge**: Limited GPU/memory on mobile devices
-
-**Solution**:
-- Reduced particle count (500K vs 5M)
-- Simplified shaders (fewer texture lookups)
-- Lower resolution render targets
-- Disable expensive effects (bloom, trails)
-- Progressive loading
-
-### 5. State Management
-**Challenge**: Coordinating complex simulation state across components
-
-**Solution**:
-- Zustand for centralized state
-- Immutable updates for time-travel debugging
-- Derived state for computed values
-- Separation of simulation and UI state
-
-## Performance Benchmarks
-
-Target performance across hardware tiers:
-
-| Hardware Tier     | Particle Count | Frame Rate | Settings               |
-| ----------------- | -------------- | ---------- | ---------------------- |
-| High-end Desktop  | 5,000,000      | 60 FPS     | Full effects, 4K       |
-| Mid-range Desktop | 2,000,000      | 60 FPS     | Full effects, 1080p    |
-| Budget Desktop    | 500,000        | 60 FPS     | Reduced effects, 1080p |
-| High-end Mobile   | 500,000        | 30-60 FPS  | Reduced effects, 720p  |
-| Mid-range Mobile  | 250,000        | 30 FPS     | Minimal effects, 720p  |
-
-### Optimization Checklist
-- [ ] Use `Float32Array` for all data textures
-- [ ] Minimize texture reads in shaders (cache in variables)
-- [ ] Use `THREE.AdditiveBlending` for particle blending
-- [ ] Set `depthWrite: false` on particle materials
-- [ ] Implement frustum culling for distant particle groups
-- [ ] Use `THREE.InstancedBufferGeometry` if not using points
-- [ ] Profile with Chrome DevTools → Performance tab
-- [ ] Monitor memory with `stats.js` and `renderer.info`
-- [ ] Use `THREE.WebGLRenderer` with `antialias: false` for performance
-- [ ] Dispose of unused geometries/materials/textures
-
-## Resources & References
-
-### Articles & Tutorials
-- [The magical world of Particles with React Three Fiber and Shaders](https://blog.maximeheckel.com/posts/the-magical-world-of-particles-with-react-three-fiber-and-shaders/) - FBO technique
-- [The Study of Shaders with React Three Fiber](https://blog.maximeheckel.com/posts/the-study-of-shaders-with-react-three-fiber/) - Shader fundamentals
-- [Three.js Journey](https://threejs-journey.com/) - Three.js course
-- [React Three Fiber Documentation](https://docs.pmnd.rs/react-three-fiber/) - R3F docs
-
-### Scientific Background
-- [Illustris Simulation](https://www.illustris-project.org/) - Cosmological simulation reference
-- [ΛCDM Model](https://en.wikipedia.org/wiki/Lambda-CDM_model) - Standard cosmology
-- [Barnes-Hut Algorithm](https://en.wikipedia.org/wiki/Barnes%E2%80%93Hut_simulation) - N-body optimization
-- [Stellar Evolution](https://en.wikipedia.org/wiki/Stellar_evolution) - Star lifecycle
-
-### Libraries & Tools
-- [React Three Fiber](https://github.com/pmndrs/react-three-fiber)
-- [Three.js](https://threejs.org/)
-- [Drei](https://github.com/pmndrs/drei) - R3F helpers
-- [Zustand](https://github.com/pmndrs/zustand) - State management
-- [Leva](https://github.com/pmndrs/leva) - GUI controls
-- [glslify](https://github.com/glslify/glslify) - GLSL module system
-
-### Inspiration
-- [WebGL Galaxy Simulation](https://experiments.withgoogle.com/chrome/galaxy)
-- [Cosmic Web Simulation](https://wwwmpa.mpa-garching.mpg.de/galform/virgo/millennium/)
-- [Space Engine](http://spaceengine.org/) - Universe simulator (desktop)
-
-## License
-
-MIT License - see LICENSE file for details
-
-## Contributing
-
-Contributions welcome! Please read CONTRIBUTING.md for guidelines.
-
-## Author
-
-Created as a learning project to explore:
-- Advanced particle systems with React Three Fiber
-- GPU-accelerated physics simulation
-- Frame Buffer Object techniques
-- Astrophysical visualization
-
----
-
-**Note**: This is an ambitious project. The roadmap is designed to be iterative - each phase builds on the previous one. Don't expect to implement everything at once. Focus on getting each phase working well before moving to the next.
-
-The MVP (Phase 1) alone is a significant achievement and demonstrates the core concepts. Phases 2-4 add realism and features. Treat Phase 5 as long-term goals.
-
-**Start simple. Iterate. Optimize. Make it beautiful.** ✨
+This project is licensed under the MIT License.
