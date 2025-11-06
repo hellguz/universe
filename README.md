@@ -4,6 +4,25 @@ A real-time, interactive N-body simulation that visualizes cosmic evolution from
 
 This project is an immersive digital laboratory for exploring astrophysical concepts. It starts from initial conditions inspired by inflationary cosmology—with smooth density perturbations and tidal angular momentum—and lets you watch as complex structures emerge entirely from fundamental physics.
 
+## How To Start
+1. **Clone the Repository:**
+   ```bash
+   git clone https://github.com/your-username/universe-simulator.git
+
+    cd universe-simulator
+    ```
+2. **Install Dependencies:**
+3.   ```bash
+    yarn install
+    ``` 
+4. **Run the Development Server:**
+5.   ```bash
+    yarn dev
+    ```
+6. **Open in Browser:**
+7.   Navigate to `http://localhost:5173` to see the simulation in action.
+
+
 
 
 ---
